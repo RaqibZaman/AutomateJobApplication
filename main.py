@@ -20,10 +20,11 @@ Take dummy label data from chatGPT, paste into .txt file, save as .csv file, ope
 '''
 '''
 Dev Notes:
-If I use self., it refers to the current instance of a class.
-If I use window., it refers to a var called "window" that exists outside of class.
-I should not use window. because it breaks if I have multiple instances of "window", for example.
-
+* If I use self., it refers to the current instance of a class. If I use window., it refers to a var called "window" that exists outside of class.
+* I should not use window. because it breaks if I have multiple instances of "window", for example.
+* .mainloop() starts tkinter event loop, and doesn't return until window is closed. That means I need to put this at the very end of my main script, I suppose...
+* window is a class. so if I do window(), I am referring to the class. I actually want to refer to the isntance of the class so you call the class and assign it to a variable: ctrl_w = window()
+* I'll change class window to Window for consistency...
 '''
 
 # module openpyxl is used by pandas but you don't need to import it
@@ -35,7 +36,7 @@ import time
 import tkinter as tk
 
 
-class window:
+class Window:
     def __init__(self):
         self.frame = tk.Tk()
         self.go_signal = tk.BooleanVar(value=False)
@@ -47,7 +48,7 @@ class window:
 
         stop_btn = tk.Button(self.frame, text="Stop", bg="red", fg="white", command=self.stop_action)
         stop_btn.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH, padx=5, pady=10)
-        self.frame.mainloop()
+        #self.frame.mainloop()
 
     def go_action(self):
             print("GO!")
@@ -67,11 +68,16 @@ print(excel_data.head())
 driver = webdriver.Chrome()     # launch chrome with selenium attached to it
 driver.get("https://www.indeed.com/")
 
-window()
-window.after(100, lambda: print("Waiting for Go bnt click"))
-window.wait_varialbe(window.go_signal)
+print("test0")  # hits
+ctrl_w = Window()
+print("test1")  # I am not even hitting this one. So once the tkinter window starts, it stays there instead of proceding with the program instructions I guess...
+ctrl_w.frame.after(100, lambda: print("Waiting for Go bnt click"))
+print("test2")
+ctrl_w.frame.wait_variable(ctrl_w.go_signal)
+print("test3")
 
-print("auto job applying continued...")
+
+ctrl_w.frame.mainloop() # keep gui open after script runs
 
 '''
 pip install pandas openpyxl
