@@ -28,8 +28,10 @@ Dev Notes:
 '''
 
 # module openpyxl is used by pandas but you don't need to import it
+import subprocess
 import pandas as pd
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time
@@ -62,20 +64,44 @@ class Window:
 excel_data = pd.read_excel("excel_files/FormLabels&Inputs.xlsx")    #format req: .xlsx
 
 # show some first rows
-print(excel_data.head())
+#print(excel_data.head())
 
 # note that browser instance must be opened by Selenium for Selenium to work on it
-driver = webdriver.Chrome()     # launch chrome with selenium attached to it
-driver.get("https://www.indeed.com/")
+# new problem: I am not logged in...
+# Let's see if I can automate logging in?
+# Looks like the simplest way is to open up chrome in debug mode and connect it with selenium
+# open up chrome in debugging mode
 
-print("test0")  # hits
-ctrl_w = Window()
-print("test1")  # I am not even hitting this one. So once the tkinter window starts, it stays there instead of proceding with the program instructions I guess...
-ctrl_w.frame.after(100, lambda: print("Waiting for Go bnt click"))
+# "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="D:\chrome-dev-profile"
+chrome_path = r'"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"'
+user_data_dir = r"D:\chrome-dev-profile"
+command = f'{chrome_path} --remote-debugging-port=9222 --user-data-dir="{user_data_dir}"'
+subprocess.Popen(command, shell=True)
+# r before a string means "raw string". So \ is not treated as an escape character
+# f before a strng means "formatted string literal"
+
+#os.system("start chrome --remote-debugging-port=9222")  # start chrome in debug mode
+# You can test if newly opened browser is in debug mode with this url: http://localhost:9222/json
+
+# "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+
+print("test1")
+options = Options()
 print("test2")
-ctrl_w.frame.wait_variable(ctrl_w.go_signal)
+options.add_experimental_option("debuggerAddress", "localhost:9222")  # align selenium to that chrome window
 print("test3")
+driver = webdriver.Chrome(options=options)     # launch chrome with selenium attached to it
+print("test4")
+driver.get("https://www.indeed.com/")
+print("test5")
 
+
+
+ctrl_w = Window()
+ctrl_w.frame.after(100, lambda: print("Waiting for Go bnt click"))
+ctrl_w.frame.wait_variable(ctrl_w.go_signal)
+print("continue auto filling forms")
+# auto fill forms here?
 
 ctrl_w.frame.mainloop() # keep gui open after script runs
 
