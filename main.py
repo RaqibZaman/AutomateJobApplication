@@ -66,9 +66,21 @@ class Window:
         self.frame = tk.Tk()
         self.go_signal = tk.BooleanVar(value=False)
         self.frame.title("Auto Job Applier")
-        self.frame.geometry("200x100")
+        
         self.frame.attributes("-topmost", True)
 
+        # put window in the center of the screen, QoL
+        win_w = 200
+        win_h = 100
+        screen_w = self.frame.winfo_screenwidth()
+        screen_h = self.frame.winfo_screenheight()
+        x = (screen_w // 2) - (win_w // 2)
+        y = (screen_h // 2) - (win_h // 2)
+        # self.frame.geometry("200x100")
+        self.frame.geometry(f"{win_w}x{win_h}+{x}+{y}")
+
+
+        # Stop Go buttons
         go_btn = tk.Button(self.frame, text="Go", bg="green", fg="white", command=self.go_action)
         go_btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=10)
 
@@ -101,13 +113,17 @@ excel_data = pd.read_excel("excel_files/FormLabels&Inputs.xlsx")    #format req:
 
 ctrl_w = Window()
 print("test0")
-if is_chr_debug_act():
+chr_d_act_var = is_chr_debug_act()
+print(chr_d_act_var)
+if not chr_d_act_var:
     chrome_path = r'"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"'
     user_data_dir = r"D:\chrome-dev-profile"
     url = "https://www.indeed.com"
     command = f'{chrome_path} --remote-debugging-port=9222 --user-data-dir="{user_data_dir}" {url}'
     subprocess.Popen(command, shell=True)   # start chrome in debug mode
+    # need to test using os instead of subprocess. subprocess keeps closing the window
     print("test0.4")
+    
 
 print("test1")
 options = Options()
@@ -124,9 +140,20 @@ print("continue auto filling forms")
 # I need to be able to loop checks and actions
 # I need to be able to check what type of page I am, probably
 
+
+
 # click continue
-cont_btn = driver.find_element(By.XPATH, "//button[text()='Continue']")
+                                  # old: "//button[text()='Continue']"
+
+# In selenium webdriver, use driver.find_elements vs .find_element. The one without the s will crash the runtime if element is not found
+any_btn = driver.find_elements(By.XPATH, "//button")
+print(any_btn)
+
+cont_btn = driver.find_elements(By.XPATH, "//button[contains(.//span/text(), 'Continue')]")
 print(cont_btn)
+
+submit_btn = driver.find_elements(By.XPATH, "//button[contains(.//span/text(), 'Submit')]")
+print(submit_btn)
 if cont_btn:
     cont_btn[0].click()
 
