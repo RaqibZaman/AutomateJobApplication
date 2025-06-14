@@ -70,7 +70,7 @@ class Window:
         self.frame = tk.Tk()
         self.go_signal = tk.BooleanVar(value=False)
         self.frame.title("Auto Job Applier")
-        
+        self.keep_alive = True
         self.frame.attributes("-topmost", True)
 
         # put window in the center of the screen, QoL
@@ -98,7 +98,8 @@ class Window:
 
     def stop_action(self):
         print("STOP!!!")
-        self.go_signal.set(False)
+        self.go_signal.set(True)
+        self.keep_alive = False
 
 
 ### Helper Functions ###
@@ -148,40 +149,33 @@ driver = webdriver.Chrome(options=options)     # launch chrome with selenium att
 #driver.get("https://www.indeed.com/")
 print("test2")
 
-# ctrl_w.frame.after(100, lambda: print("Waiting for Go bnt click"))
-ctrl_w.frame.wait_variable(ctrl_w.go_signal)
-print("continue auto filling forms")
+while ctrl_w.keep_alive:
+    ctrl_w.frame.wait_variable(ctrl_w.go_signal)
+    if ctrl_w.keep_alive == False:
+        break
+    print("continue auto filling forms")
 
-# auto fill forms here?
-# I need to be able to loop checks and actions
-# I need to be able to check what type of page I am, probably
+    # Force correct tab (for people like me who keeps chrome open while initiaing this script.)
+    driver.switch_to.window(driver.window_handles[-1])  # -1 refers to the last tab opened i.e. newest tab in chrome
+    print("Switch to latest chrome tab:", driver.title)
 
+    # Wait for rendering
+    #time.sleep(5)
 
-# Force correct tab
-driver.switch_to.window(driver.window_handles[-1])  # -1 refers to the last tab opened i.e. newest tab in chrome
-print("Switch to latest chrome tab:", driver.title)
+    # Check basic access
+    print("Page URL:", driver.current_url)
+    print("Page source size:", len(driver.page_source))
 
-# Optional: Re-load the page to ensure consistent state
-# driver.get("https://www.indeed.com")
+    h1s = driver.find_elements(By.TAG_NAME, "h1")
+    print(f"Found {len(h1s)} <h1> tags")
 
-# Wait for rendering
-#time.sleep(5)
+    # Try to find your target span
+    spans = driver.find_elements(By.XPATH, "//span[contains(text(),'Continue')]")
+    print(f"Found {len(spans)} spans with 'Continue'")
 
-# Check basic access
-print("Page URL:", driver.current_url)
-print("Page source size:", len(driver.page_source))
+    visible = [s for s in spans if s.is_displayed()]
+    print(f"{len(visible)} are visible")
 
-h1s = driver.find_elements(By.TAG_NAME, "h1")
-print(f"Found {len(h1s)} <h1> tags")
-
-# Try to find your target span
-spans = driver.find_elements(By.XPATH, "//span[contains(text(),'Continue')]")
-print(f"Found {len(spans)} spans with 'Continue'")
-
-visible = [s for s in spans if s.is_displayed()]
-print(f"{len(visible)} are visible")
-
-
-
+ctrl_w.frame.destroy()  # kill gui instead???
 ctrl_w.frame.mainloop() # keep gui open after script runs
 
