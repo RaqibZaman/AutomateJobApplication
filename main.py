@@ -47,6 +47,8 @@ Dev Notes:
 # f before a strng means "formatted string literal"
 # You can test if newly opened browser is in debug mode with this url: http://localhost:9222/json
 # the webdriver/selenium stuff can only run when chrome debugger window is open. Add check
+# In selenium webdriver, use driver.find_elements vs .find_element. The one without the s will crash the runtime if element is not found
+# use translate() to convert all upper case text to lower case test for case-insensitive text matching.
 
 '''
 
@@ -59,6 +61,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import tkinter as tk
 
 class Window:
@@ -96,6 +100,9 @@ class Window:
         print("STOP!!!")
         self.go_signal.set(False)
 
+
+### Helper Functions ###
+
 def is_chr_debug_act(port=9222):
     try:
         r= requests.get(f"http://localhost:{port}/json/version", timeout=2)
@@ -104,6 +111,15 @@ def is_chr_debug_act(port=9222):
         return False
 
 
+### Helper Functions END ###
+
+# Webdriver: print text, class, and outerHTML of buttons
+def wbdr_print(btns):
+    for i, b in enumerate(btns):
+        text = b.text.strip()
+        btn_class = b.get_attribute("class")
+        print(f"{i}. text: '{text}' | class: '{btn_class}'")
+        #print(f"{i}. {b.get_attribute('outerHTML')}")
 
 
 # import data from excel file. column[A]=Labels column[B]=Values for form input
@@ -141,22 +157,29 @@ print("continue auto filling forms")
 # I need to be able to check what type of page I am, probably
 
 
+# Force correct tab
+driver.switch_to.window(driver.window_handles[-1])  # -1 refers to the last tab opened i.e. newest tab in chrome
+print("Switch to latest chrome tab:", driver.title)
 
-# click continue
-                                  # old: "//button[text()='Continue']"
+# Optional: Re-load the page to ensure consistent state
+# driver.get("https://www.indeed.com")
 
-# In selenium webdriver, use driver.find_elements vs .find_element. The one without the s will crash the runtime if element is not found
-any_btn = driver.find_elements(By.XPATH, "//button")
-print(any_btn)
+# Wait for rendering
+#time.sleep(5)
 
-cont_btn = driver.find_elements(By.XPATH, "//button[contains(.//span/text(), 'Continue')]")
-print(cont_btn)
+# Check basic access
+print("Page URL:", driver.current_url)
+print("Page source size:", len(driver.page_source))
 
-submit_btn = driver.find_elements(By.XPATH, "//button[contains(.//span/text(), 'Submit')]")
-print(submit_btn)
-if cont_btn:
-    cont_btn[0].click()
+h1s = driver.find_elements(By.TAG_NAME, "h1")
+print(f"Found {len(h1s)} <h1> tags")
 
+# Try to find your target span
+spans = driver.find_elements(By.XPATH, "//span[contains(text(),'Continue')]")
+print(f"Found {len(spans)} spans with 'Continue'")
+
+visible = [s for s in spans if s.is_displayed()]
+print(f"{len(visible)} are visible")
 
 
 
