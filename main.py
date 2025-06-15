@@ -49,6 +49,7 @@ Dev Notes:
 # the webdriver/selenium stuff can only run when chrome debugger window is open. Add check
 # In selenium webdriver, use driver.find_elements vs .find_element. The one without the s will crash the runtime if element is not found
 # use translate() to convert all upper case text to lower case test for case-insensitive text matching.
+# XPath: // means look through all elements, for tag[] the [] is ___ 
 
 '''
 
@@ -104,6 +105,7 @@ class Window:
 
 ### Helper Functions ###
 
+# requests: check if chrome window is in debug mode
 def is_chr_debug_act(port=9222):
     try:
         r= requests.get(f"http://localhost:{port}/json/version", timeout=2)
@@ -111,16 +113,51 @@ def is_chr_debug_act(port=9222):
     except requests.RequestException:
         return False
 
+# Get useful info about an element
+# def element_info(element):
+#     tag = e.tag_name
 
-### Helper Functions END ###
-
-# Webdriver: print text, class, and outerHTML of buttons
+# webdriver: print text, class, and outerHTML of buttons
 def wbdr_print(btns):
     for i, b in enumerate(btns):
         text = b.text.strip()
         btn_class = b.get_attribute("class")
         print(f"{i}. text: '{text}' | class: '{btn_class}'")
         #print(f"{i}. {b.get_attribute('outerHTML')}")
+
+# webdriver: click button
+def wb_btn_click(driver):
+    # if target text is in span
+    # make case insensitive for find_elements
+    # list of key words to click?
+
+    # if tag == "span":
+    #     txt = e.text.strip()
+    #     print(f"Text: {txt}")
+
+    # I need a list of keywords to check for like Continue or Submit, if its there, then click it
+
+    clk_keywords = ["continue, Continue, submit, Submit"]
+    spans = driver.find_elements(By.XPATH, "//span[contains(text(),'Continue')]")
+    print(f"Found {len(spans)} spans with 'Continue'")
+    visible = [s for s in spans if s.is_displayed()]
+    print(f"{len(visible)} are visible")
+    if visible:
+        visible[0].click()
+
+# ...
+def wb_radio_click(driver):
+    # Find radio buttons
+    radios = driver.find_elements(By.XPATH, "//input[@type='radio']")
+    print(f"Found {len(radios)} radios")
+    visible = [x for x in radios if x.is_displayed()]
+    print(f"{len(visible)} are visible")
+    # Find description associated with radio buttons
+    
+    # Identify radios by the name/value
+    # click the one that is relevant
+    if visible:
+        visible[0].click()
 
 
 # import data from excel file. column[A]=Labels column[B]=Values for form input
@@ -149,6 +186,7 @@ driver = webdriver.Chrome(options=options)     # launch chrome with selenium att
 #driver.get("https://www.indeed.com/")
 print("test2")
 
+
 while ctrl_w.keep_alive:
     ctrl_w.frame.wait_variable(ctrl_w.go_signal)
     if ctrl_w.keep_alive == False:
@@ -156,25 +194,54 @@ while ctrl_w.keep_alive:
     print("continue auto filling forms")
 
     # Force correct tab (for people like me who keeps chrome open while initiaing this script.)
-    driver.switch_to.window(driver.window_handles[-1])  # -1 refers to the last tab opened i.e. newest tab in chrome
-    print("Switch to latest chrome tab:", driver.title)
-
-    # Wait for rendering
-    #time.sleep(5)
-
-    # Check basic access
+    # -1 refers to the last tab opened i.e. newest tab in chrome
+    driver.switch_to.window(driver.window_handles[-1])  
+    
+    # For Debugging
+    print("Tab webdriver is on:", driver.title)
     print("Page URL:", driver.current_url)
-    print("Page source size:", len(driver.page_source))
 
-    h1s = driver.find_elements(By.TAG_NAME, "h1")
-    print(f"Found {len(h1s)} <h1> tags")
+    # I can check what part of the application I am on by either Page title or URL. I'll go with URL
+    # check to find "Do you consent"
+    # I can pattern match the URL- it has a hierarchy where the end of the URL is more specific
+    # Find all buttons & inputs. Filter by visible. They should have an order of what comes first on the page. 
+    if "questions-module/questions" in driver.current_url:
+        print("is a questions page")
+        # these module/questions are a free for all. they can have radio buttons, date/time boxes, etc.
+        gui_ele = driver.find_elements(
+            By.XPATH,
+            "//input | //span[contains(text(),'Continue')] | //select"
+        )
+        visible = [e for e in gui_ele if e.is_displayed()]
 
-    # Try to find your target span
-    spans = driver.find_elements(By.XPATH, "//span[contains(text(),'Continue')]")
-    print(f"Found {len(spans)} spans with 'Continue'")
+        # debug info: honestly I need to know about what is on the page, in order to know what to do with it
+        for e in visible:
+            tag = e.tag_name
+            print(f"\nTag: {tag}")
 
-    visible = [s for s in spans if s.is_displayed()]
-    print(f"{len(visible)} are visible")
+            if tag == "input":
+                type = e.get_attribute("type")
+                val = e.get_attribute("value")
+                name = e.get_attribute("name")
+                print(f"Type: {type}, Value: {val}, Name: {name}")
+            
+            if tag == "span":
+                txt = e.text.strip()
+                print(f"Text: {txt}")
+        
+        
+
+    just_clk_part = ["form/review", "form/resume"]
+        
+    # take part from just_clk_part list and compare it with driver.current_url, for every e in list
+    if any(part in driver.current_url for part in just_clk_part):
+        wb_btn_click(driver)
+    
+    # if "form/review" in driver.current_url:
+    #     wb_btn_click(driver)
+
+    
+
 
 ctrl_w.frame.destroy()  # kill gui instead???
 ctrl_w.frame.mainloop() # keep gui open after script runs
