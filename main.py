@@ -113,9 +113,31 @@ def is_chr_debug_act(port=9222):
     except requests.RequestException:
         return False
 
-# Get useful info about an element
-# def element_info(element):
-#     tag = e.tag_name
+# webdriver: Look at the webpage through the eyes of a robot
+def page_info_print(driver):
+    print("Tab webdriver is on:", driver.title)
+    print("Page URL:", driver.current_url)
+    # Find the visible actionable UI elements of webpage
+    gui_ele = driver.find_elements(
+        By.XPATH,
+        "//input | //button//span | //select"
+    )
+    visible = [e for e in gui_ele if e.is_displayed()]
+
+    # debug info: honestly I need to know about what is on the page, in order to know what to do with it
+    for e in visible:
+        tag = e.tag_name
+        print(f"\nTag: {tag}")
+
+        if tag == "input":
+            type = e.get_attribute("type")
+            val = e.get_attribute("value")
+            name = e.get_attribute("name")
+            print(f"Type: {type}, Value: {val}, Name: {name}")
+        
+        if tag == "span":
+            txt = e.text.strip()
+            print(f"Text: {txt}")
 
 # webdriver: print text, class, and outerHTML of buttons
 def wbdr_print(btns):
@@ -137,13 +159,24 @@ def wb_btn_click(driver):
 
     # I need a list of keywords to check for like Continue or Submit, if its there, then click it
 
-    clk_keywords = ["continue, Continue, submit, Submit"]
-    spans = driver.find_elements(By.XPATH, "//span[contains(text(),'Continue')]")
+    # spans = driver.find_elements(By.XPATH, "//span[contains(text(),'Continue')]")
+    clk_keywords = ["continue", "submit"]
+    spans = driver.find_elements(By.XPATH, "//button//span")
     print(f"Found {len(spans)} spans with 'Continue'")
-    visible = [s for s in spans if s.is_displayed()]
+    visible = [s for s in spans if s.is_displayed()]    # go through each item and apply a boolean-return function
     print(f"{len(visible)} are visible")
-    if visible:
-        visible[0].click()
+    for v in visible:
+        txt = v.text.strip().lower()
+        print(f"span text: {txt}")
+        if txt in clk_keywords:
+            print("clicked", v.text)
+            v.click()
+            break
+
+    # check contents of span
+
+    # if visible:
+    #     visible[0].click()
 
 # ...
 def wb_radio_click(driver):
@@ -188,6 +221,8 @@ print("test2")
 
 
 while ctrl_w.keep_alive:
+    
+    
     ctrl_w.frame.wait_variable(ctrl_w.go_signal)
     if ctrl_w.keep_alive == False:
         break
@@ -196,41 +231,17 @@ while ctrl_w.keep_alive:
     # Force correct tab (for people like me who keeps chrome open while initiaing this script.)
     # -1 refers to the last tab opened i.e. newest tab in chrome
     driver.switch_to.window(driver.window_handles[-1])  
-    
     # For Debugging
-    print("Tab webdriver is on:", driver.title)
-    print("Page URL:", driver.current_url)
+    page_info_print(driver) # right window must be in focus to get the right details, so must followe right after .switch_to
 
     # I can check what part of the application I am on by either Page title or URL. I'll go with URL
     # check to find "Do you consent"
     # I can pattern match the URL- it has a hierarchy where the end of the URL is more specific
-    # Find all buttons & inputs. Filter by visible. They should have an order of what comes first on the page. 
+    # Find all buttons & inputs. Filter by visible. They should have an order of what comes first on the page.
+    # Before any automation occurs, there should be a debug/info output that tells me about the page I am on
     if "questions-module/questions" in driver.current_url:
-        print("is a questions page")
-        # these module/questions are a free for all. they can have radio buttons, date/time boxes, etc.
-        gui_ele = driver.find_elements(
-            By.XPATH,
-            "//input | //span[contains(text(),'Continue')] | //select"
-        )
-        visible = [e for e in gui_ele if e.is_displayed()]
-
-        # debug info: honestly I need to know about what is on the page, in order to know what to do with it
-        for e in visible:
-            tag = e.tag_name
-            print(f"\nTag: {tag}")
-
-            if tag == "input":
-                type = e.get_attribute("type")
-                val = e.get_attribute("value")
-                name = e.get_attribute("name")
-                print(f"Type: {type}, Value: {val}, Name: {name}")
-            
-            if tag == "span":
-                txt = e.text.strip()
-                print(f"Text: {txt}")
+        pass
         
-        
-
     just_clk_part = ["form/review", "form/resume"]
         
     # take part from just_clk_part list and compare it with driver.current_url, for every e in list
