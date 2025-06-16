@@ -50,7 +50,11 @@ Dev Notes:
 # In selenium webdriver, use driver.find_elements vs .find_element. The one without the s will crash the runtime if element is not found
 # use translate() to convert all upper case text to lower case test for case-insensitive text matching.
 # XPath: // means look through all elements, for tag[] the [] is ___ 
-
+# I can check what part of the application I am on by either Page title or URL. I'll go with URL
+# check to find "Do you consent"
+# I can pattern match the URL- it has a hierarchy where the end of the URL is more specific
+# Find all buttons & inputs. Filter by visible. They should have an order of what comes first on the page.
+# Before any automation occurs, there should be a debug/info output that tells me about the page I am on
 '''
 
 # module openpyxl is used by pandas but you don't need to import it
@@ -114,13 +118,13 @@ def is_chr_debug_act(port=9222):
         return False
 
 # webdriver: Look at the webpage through the eyes of a robot
-def page_info_print(driver):
+def page_visible_info(driver):
     print("Tab webdriver is on:", driver.title)
     print("Page URL:", driver.current_url)
     # Find the visible actionable UI elements of webpage
     gui_ele = driver.find_elements(
         By.XPATH,
-        "//input | //button//span | //select"
+        "//input | //button//span | //select | //label"
     )
     visible = [e for e in gui_ele if e.is_displayed()]
 
@@ -138,6 +142,11 @@ def page_info_print(driver):
         if tag == "span":
             txt = e.text.strip()
             print(f"Text: {txt}")
+
+        if tag == "label":
+            print(f"Label text: {e.text.strip()}")
+
+    return visible
 
 # webdriver: print text, class, and outerHTML of buttons
 def wbdr_print(btns):
@@ -232,18 +241,9 @@ while ctrl_w.keep_alive:
     # -1 refers to the last tab opened i.e. newest tab in chrome
     driver.switch_to.window(driver.window_handles[-1])  
     # For Debugging
-    page_info_print(driver) # right window must be in focus to get the right details, so must followe right after .switch_to
-
-    # I can check what part of the application I am on by either Page title or URL. I'll go with URL
-    # check to find "Do you consent"
-    # I can pattern match the URL- it has a hierarchy where the end of the URL is more specific
-    # Find all buttons & inputs. Filter by visible. They should have an order of what comes first on the page.
-    # Before any automation occurs, there should be a debug/info output that tells me about the page I am on
-    if "questions-module/questions" in driver.current_url:
-        pass
+    vis_elements = page_visible_info(driver) # right window must be in focus to get the right details, so must followe right after .switch_to
         
     just_clk_part = ["form/review", "form/resume"]
-        
     # take part from just_clk_part list and compare it with driver.current_url, for every e in list
     if any(part in driver.current_url for part in just_clk_part):
         wb_btn_click(driver)
