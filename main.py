@@ -140,7 +140,8 @@ def page_visible_info(driver):
     # Find the visible actionable UI elements of webpage
     gui_ele = driver.find_elements(
         By.XPATH,
-        "//input | //button//span | //select | //label"
+        # "//input | //button//span | //select | //label"
+        "//input | //button | //select | //label"
     )
     visible = [e for e in gui_ele if e.is_displayed()]
 
@@ -155,7 +156,11 @@ def page_visible_info(driver):
             name = e.get_attribute("name")
             print(f"Type: {type}, Value: {val}, \nName: {name}")
         
-        if tag == "span":
+        # if tag == "span":
+        #     txt = e.text.strip()
+        #     print(f"Text: {txt}")
+
+        if tag == "button":
             txt = e.text.strip()
             print(f"Text: {txt}")
 
@@ -243,18 +248,23 @@ while ctrl_w.keep_alive:
     vis_elements = page_visible_info(driver)    # get page info on last window in focus, so must follow .switch_to
         
     # look for visible element patterns, and use index to crawl back up and find associations between input and label 
+    # I could associate labels with inputs,
+    # Label
+        # input
+        # input
+        # input
     for index, e in enumerate(vis_elements):
         
         if e.get_attribute("type") == "label":
             # if element is a label, I want to check the conents of label text
-            yes_txt = ["Are you a US Citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience"]
+            yes_txt = ["Are you a US Citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience", "Will you be able to reliably commute", ]
             yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
             label_txt = e.text.strip().lower()
             if any(txt in label_txt for txt in yes_txt):
                 print("It's a match!")
                 # found a label that I want to say yes to! find associated input val (radio for now)
                 chk_idx = index + 2
-                if chk_idx < len(vis_elements):
+                if (index + 2) < len(vis_elements):
                     
                     # consider checking the tag_name for input, it includes multiple types e.g. radio
                     if vis_elements[chk_idx].get_attribute("type") == "radio":
