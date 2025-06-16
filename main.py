@@ -55,6 +55,9 @@ Dev Notes:
 # I can pattern match the URL- it has a hierarchy where the end of the URL is more specific
 # Find all buttons & inputs. Filter by visible. They should have an order of what comes first on the page.
 # Before any automation occurs, there should be a debug/info output that tells me about the page I am on
+# driver.switch_to.window(driver.window_handles[-1])
+    # Force correct tab (for people like me who keeps chrome open while initiaing this script.)
+    # -1 refers to the last tab opened i.e. newest tab in chrome
 '''
 
 # module openpyxl is used by pandas but you don't need to import it
@@ -113,9 +116,22 @@ class Window:
 def is_chr_debug_act(port=9222):
     try:
         r= requests.get(f"http://localhost:{port}/json/version", timeout=2)
+        print("Chrome is in debug mode")
+        print("Note: chrome can be running without being visible, needs to be killed in task manager")
         return r.status_code == 200
     except requests.RequestException:
+        print("Chrome is NOT in debug mode!!!")
         return False
+
+# _: launch chrome in debug mode
+def act_chr_debug():
+    chrome_path = r'"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"'
+    user_data_dir = r"D:\chrome-dev-profile"
+    url = "https://www.indeed.com"
+    command = f'{chrome_path} --remote-debugging-port=9222 --user-data-dir="{user_data_dir}" {url}'
+    subprocess.Popen(command, shell=True)   # start chrome in debug mode
+    # need to test using os instead of subprocess. subprocess keeps closing the window
+    print("Chrome Launched in Debug Mode!!!")
 
 # webdriver: Look at the webpage through the eyes of a robot
 def page_visible_info(driver):
@@ -129,15 +145,15 @@ def page_visible_info(driver):
     visible = [e for e in gui_ele if e.is_displayed()]
 
     # debug info: honestly I need to know about what is on the page, in order to know what to do with it
-    for e in visible:
+    for index, e in enumerate(visible):
         tag = e.tag_name
-        print(f"\nTag: {tag}")
+        print(f"\nTag[{index}]: {tag}")
 
         if tag == "input":
             type = e.get_attribute("type")
             val = e.get_attribute("value")
             name = e.get_attribute("name")
-            print(f"Type: {type}, Value: {val}, Name: {name}")
+            print(f"Type: {type}, Value: {val}, \nName: {name}")
         
         if tag == "span":
             txt = e.text.strip()
@@ -157,7 +173,7 @@ def wbdr_print(btns):
         #print(f"{i}. {b.get_attribute('outerHTML')}")
 
 # webdriver: click button
-def wb_btn_click(driver):
+def next_click(driver):
     # if target text is in span
     # make case insensitive for find_elements
     # list of key words to click?
@@ -208,45 +224,48 @@ excel_data = pd.read_excel("excel_files/FormLabels&Inputs.xlsx")    #format req:
 #print(excel_data.head())
 
 ctrl_w = Window()
-print("test0")
-chr_d_act_var = is_chr_debug_act()
-print(chr_d_act_var)
-if not chr_d_act_var:
-    chrome_path = r'"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"'
-    user_data_dir = r"D:\chrome-dev-profile"
-    url = "https://www.indeed.com"
-    command = f'{chrome_path} --remote-debugging-port=9222 --user-data-dir="{user_data_dir}" {url}'
-    subprocess.Popen(command, shell=True)   # start chrome in debug mode
-    # need to test using os instead of subprocess. subprocess keeps closing the window
-    print("test0.4")
-    
 
-print("test1")
+if not is_chr_debug_act():
+    act_chr_debug()
+    
 options = Options()
 options.add_experimental_option("debuggerAddress", "localhost:9222")  # align selenium to that chrome window
 driver = webdriver.Chrome(options=options)     # launch chrome with selenium attached to it
-#driver.get("https://www.indeed.com/")
-print("test2")
-
 
 while ctrl_w.keep_alive:
-    
     
     ctrl_w.frame.wait_variable(ctrl_w.go_signal)
     if ctrl_w.keep_alive == False:
         break
     print("continue auto filling forms")
 
-    # Force correct tab (for people like me who keeps chrome open while initiaing this script.)
-    # -1 refers to the last tab opened i.e. newest tab in chrome
-    driver.switch_to.window(driver.window_handles[-1])  
-    # For Debugging
-    vis_elements = page_visible_info(driver) # right window must be in focus to get the right details, so must followe right after .switch_to
+    driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
+    vis_elements = page_visible_info(driver)    # get page info on last window in focus, so must follow .switch_to
         
+    # look for visible element patterns, and use index to crawl back up and find associations between input and label 
+    for index, e in enumerate(vis_elements):
+        
+        if e.get_attribute("type") == "label":
+            # if element is a label, I want to check the conents of label text
+            yes_txt = ["Are you a US Citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience"]
+            yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
+            label_txt = e.text.strip().lower()
+            if any(txt in label_txt for txt in yes_txt):
+                print("It's a match!")
+                # found a label that I want to say yes to! find associated input val (radio for now)
+                chk_idx = index + 2
+                if chk_idx < len(vis_elements):
+                    
+                    # consider checking the tag_name for input, it includes multiple types e.g. radio
+                    if vis_elements[chk_idx].get_attribute("type") == "radio":
+                        if vis_elements[chk_idx].get_attribute("value") == "yes":
+                            vis_elements[chk_idx].click()
+            else:
+                print("no label match")
+
     just_clk_part = ["form/review", "form/resume"]
-    # take part from just_clk_part list and compare it with driver.current_url, for every e in list
     if any(part in driver.current_url for part in just_clk_part):
-        wb_btn_click(driver)
+        next_click(driver)
     
     # if "form/review" in driver.current_url:
     #     wb_btn_click(driver)
