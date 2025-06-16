@@ -253,6 +253,32 @@ while ctrl_w.keep_alive:
         # input
         # input
         # input
+    # go though all the element
+    # Label is key... I don't want to throw away the label. Let's use tuples
+
+    label_ass_lst = []  # this is a list of tuples, with the label as key and list of associated elements following label as value
+    current_label = None
+    associated_elements = []
+
+    for e in vis_elements:
+        # this hits with every instance of label. So upon next triggering, it will be a new label
+        if e.get_attribute("type") == "label":
+            # append with every instance of label except initial one
+            if current_label is not None:
+                label_ass_lst.append((current_label, associated_elements))
+            #
+            current_label = e
+            associated_elements = []
+        # if next element is not a label
+        else:
+            associated_elements.append(e)
+
+    # for the last label, it is not yet added to associated_elements list. Add it
+    if current_label is not None:
+        label_ass_lst.append((current_label, associated_elements))
+
+
+
     for index, e in enumerate(vis_elements):
         
         if e.get_attribute("type") == "label":
