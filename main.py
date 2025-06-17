@@ -58,9 +58,23 @@ Dev Notes:
 # driver.switch_to.window(driver.window_handles[-1])
     # Force correct tab (for people like me who keeps chrome open while initiaing this script.)
     # -1 refers to the last tab opened i.e. newest tab in chrome
+# look for visible element patterns, and use index to crawl back up and find associations between input and label 
+# I could associate labels with inputs,
+# Label is key... I don't want to throw away the label. Let's use tuples
+#driver.implicitly_wait(10)      # apparently I just need to call this 1 time per session... ok, let's see. For when quickly going through webpages automatically
+# Just want to wait the minimum time so time.sleep(10) isn't exactly the right solution
+
+# How to detect when page is fully loaded? requests or websocket library? So if selenium library doesn't have exactly what I am looking for, I can look at a different library
+# Also consider that when you select a radio button, the page dynamically loads in other radio button elements... are they just hidden i.e. not-visible
+# put click continue btn by url match, for those pages put ontop of keep alive loop. Break it, reloop, use webdriver wait on finding the next button. Don't execute code for checking page for web elements, need to hange on wait_variable
+# Should add error handing for selenium incase of staleness
+
+# You should check the load order of the DOM in terms of first/last. And put the expected condition (EC) as what loads close to last, I suppose.
+#wait = WebDriverWait(driver, 30)
+#wait.until(EC.)
 '''
 
-# module openpyxl is used by pandas but you don't need to import it
+# module openpyxl (installed) is used by pandas but you don't need to import it
 import subprocess
 import pandas as pd
 import requests
@@ -171,7 +185,7 @@ def page_visible_info(driver):
 
 # input: list of visible elements
 # output: a list of tuples, with the label as key and list of associated elements following label as value. Consider that each label in list of visible elements as a delimiter.
-# type:: input: [visible_elements] output: [(label, [visible_elements]),...]
+# type:: input: [visible_elements] output: [(label, [elements]),...]
 def get_label_elist_pairs(vis_elements):
     label_elst_pairs = []
     cur_label = None
@@ -250,7 +264,7 @@ def wb_radio_click(driver):
 # import data from excel file. column[A]=Labels column[B]=Values for form input
 excel_data = pd.read_excel("excel_files/FormLabels&Inputs.xlsx")    #format req: .xlsx
 # show some first rows
-#print(excel_data.head())
+print(excel_data.head())
 
 ctrl_w = Window()
 
@@ -260,39 +274,27 @@ if not is_chr_debug_act():
 options = Options()
 options.add_experimental_option("debuggerAddress", "localhost:9222")  # align selenium to that chrome window
 driver = webdriver.Chrome(options=options)     # launch chrome with selenium attached to it
-#driver.implicitly_wait(10)      # apparently I just need to call this 1 time per session... ok, let's see. For when quickly going through webpages automatically
-bypass_wait = False
+
 while ctrl_w.keep_alive:
     if ctrl_w.keep_alive == False:
         print("I'm dying!!! argh...")
         break
-    
-    if not bypass_wait:
-        ctrl_w.frame.wait_variable(ctrl_w.go_signal)    # wai_variable not check value- only checks for a variable change once runtime reaches it.
+
+    just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply"]
+    if any(part in driver.current_url for part in just_clk_part):
+        next_click(driver)
     else:
-        # Just want to wait the minimum time so time.sleep(10) isn't exactly the right solution
-        
-        # You should check the load order of the DOM in terms of first/last. And put the expected condition (EC) as what loads close to last, I suppose.
-        #wait = WebDriverWait(driver, 30)
-        #wait.until(EC.)
-        time.sleep(7)
-        pass 
-    bypass_wait = False
+        print("No URL match")
     
+    
+    ctrl_w.frame.wait_variable(ctrl_w.go_signal)    # wait_variable checks variable modified not value
     print("continue auto filling forms")
 
     driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
-    print(driver.window_handles)
-    vis_elements = page_visible_info(driver)    # get page info on last window in focus, so must follow .switch_to
+    #print(driver.window_handles)
+    vis_elements = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
         
-    # look for visible element patterns, and use index to crawl back up and find associations between input and label 
-    # I could associate labels with inputs,
-    # Label
-        # input
-        # input
-        # input
-    # go though all the element
-    # Label is key... I don't want to throw away the label. Let's use tuples
+    
     label_elst_pairs = get_label_elist_pairs(vis_elements)
     print(label_elst_pairs)
     for pair in label_elst_pairs:
@@ -319,18 +321,6 @@ while ctrl_w.keep_alive:
                 match.click()
         else:
             print("no label match")
-
-    just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply"]
-    if any(part in driver.current_url for part in just_clk_part):
-        next_click(driver)
-        bypass_wait = True
-    else:
-        print("No URL match")
-    
-    # if "form/review" in driver.current_url:
-    #     wb_btn_click(driver)
-
-    
 
 
 ctrl_w.frame.destroy()  # kill gui instead???
