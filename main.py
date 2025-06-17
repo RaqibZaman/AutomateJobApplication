@@ -68,9 +68,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-import time
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import time
 import tkinter as tk
 
 class Window:
@@ -169,6 +169,30 @@ def page_visible_info(driver):
 
     return visible
 
+# input: list of visible elements
+# output: a list of tuples, with the label as key and list of associated elements following label as value. Consider that each label in list of visible elements as a delimiter.
+# type:: input: [visible_elements] output: [(label, [visible_elements]),...]
+def get_label_elist_pairs(vis_elements):
+    label_elst_pairs = []
+    cur_label = None
+    ass_eles = []   # elements associated with label
+    for e in vis_elements:
+        # this hits with every instance of label. So upon next triggering, it will be a new label
+        if e.get_attribute("type") == "label":
+            # append with every instance of label except initial one
+            if cur_label is not None:
+                label_elst_pairs.append((cur_label, ass_eles))
+            # start new tuple by label
+            cur_label = e
+            ass_eles = []
+        # if next element is not a label
+        else:
+            ass_eles.append(e)
+    # for the last label, it is not yet added to associated_elements list. Add it
+    if cur_label is not None:
+        label_elst_pairs.append((cur_label, ass_eles))
+    return label_elst_pairs
+
 # webdriver: print text, class, and outerHTML of buttons
 def wbdr_print(btns):
     for i, b in enumerate(btns):
@@ -190,15 +214,15 @@ def next_click(driver):
     # I need a list of keywords to check for like Continue or Submit, if its there, then click it
 
     # spans = driver.find_elements(By.XPATH, "//span[contains(text(),'Continue')]")
-    clk_keywords = ["continue", "submit"]
-    spans = driver.find_elements(By.XPATH, "//button//span")
-    print(f"Found {len(spans)} spans with 'Continue'")
-    visible = [s for s in spans if s.is_displayed()]    # go through each item and apply a boolean-return function
+    
+    spans = driver.find_elements(By.XPATH, "//button")
+    visible = [b for b in spans if b.is_displayed()]    # go through each item and apply a boolean-return function
     print(f"{len(visible)} are visible")
+    clk_keywords = ["continue", "submit", "return to job search"]
     for v in visible:
         txt = v.text.strip().lower()
-        print(f"span text: {txt}")
-        if txt in clk_keywords:
+        print(f"button text: {txt}")
+        if any(keyword in txt for keyword in clk_keywords):
             print("clicked", v.text)
             v.click()
             break
@@ -236,15 +260,29 @@ if not is_chr_debug_act():
 options = Options()
 options.add_experimental_option("debuggerAddress", "localhost:9222")  # align selenium to that chrome window
 driver = webdriver.Chrome(options=options)     # launch chrome with selenium attached to it
-
+#driver.implicitly_wait(10)      # apparently I just need to call this 1 time per session... ok, let's see. For when quickly going through webpages automatically
+bypass_wait = False
 while ctrl_w.keep_alive:
-    
-    ctrl_w.frame.wait_variable(ctrl_w.go_signal)
     if ctrl_w.keep_alive == False:
+        print("I'm dying!!! argh...")
         break
+    
+    if not bypass_wait:
+        ctrl_w.frame.wait_variable(ctrl_w.go_signal)    # wai_variable not check value- only checks for a variable change once runtime reaches it.
+    else:
+        # Just want to wait the minimum time so time.sleep(10) isn't exactly the right solution
+        
+        # You should check the load order of the DOM in terms of first/last. And put the expected condition (EC) as what loads close to last, I suppose.
+        #wait = WebDriverWait(driver, 30)
+        #wait.until(EC.)
+        time.sleep(7)
+        pass 
+    bypass_wait = False
+    
     print("continue auto filling forms")
 
     driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
+    print(driver.window_handles)
     vis_elements = page_visible_info(driver)    # get page info on last window in focus, so must follow .switch_to
         
     # look for visible element patterns, and use index to crawl back up and find associations between input and label 
@@ -255,53 +293,39 @@ while ctrl_w.keep_alive:
         # input
     # go though all the element
     # Label is key... I don't want to throw away the label. Let's use tuples
-
-    label_ass_lst = []  # this is a list of tuples, with the label as key and list of associated elements following label as value
-    current_label = None
-    associated_elements = []
-
-    for e in vis_elements:
-        # this hits with every instance of label. So upon next triggering, it will be a new label
-        if e.get_attribute("type") == "label":
-            # append with every instance of label except initial one
-            if current_label is not None:
-                label_ass_lst.append((current_label, associated_elements))
-            #
-            current_label = e
-            associated_elements = []
-        # if next element is not a label
+    label_elst_pairs = get_label_elist_pairs(vis_elements)
+    print(label_elst_pairs)
+    for pair in label_elst_pairs:
+        # if pair[0].get_attribute("type") == "label":
+        # if element is a label, I want to check the conents of label text
+        yes_txt = ["Are you a US Citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience", "Will you be able to reliably commute", ]
+        yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
+        label_txt = pair[0].text.strip().lower()
+        if any(txt in label_txt for txt in yes_txt):
+            print("It's a match!")
+            # found a label that I want to say yes to! find associated input val (radio for now)
+            # pair[1]: access list of elements associated with label
+            # check if element is: tag_name:input, type:radio, value:yes
+            match = None
+            for e in pair[1]:
+                if (
+                    e.tag_name == "input" and
+                    e.get_attribute("type") == "radio" and
+                    e.get_attribute("value") == "yes"
+                ):
+                    match = e
+                    break
+            if match:
+                match.click()
         else:
-            associated_elements.append(e)
+            print("no label match")
 
-    # for the last label, it is not yet added to associated_elements list. Add it
-    if current_label is not None:
-        label_ass_lst.append((current_label, associated_elements))
-
-
-
-    for index, e in enumerate(vis_elements):
-        
-        if e.get_attribute("type") == "label":
-            # if element is a label, I want to check the conents of label text
-            yes_txt = ["Are you a US Citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience", "Will you be able to reliably commute", ]
-            yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
-            label_txt = e.text.strip().lower()
-            if any(txt in label_txt for txt in yes_txt):
-                print("It's a match!")
-                # found a label that I want to say yes to! find associated input val (radio for now)
-                chk_idx = index + 2
-                if (index + 2) < len(vis_elements):
-                    
-                    # consider checking the tag_name for input, it includes multiple types e.g. radio
-                    if vis_elements[chk_idx].get_attribute("type") == "radio":
-                        if vis_elements[chk_idx].get_attribute("value") == "yes":
-                            vis_elements[chk_idx].click()
-            else:
-                print("no label match")
-
-    just_clk_part = ["form/review", "form/resume"]
+    just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply"]
     if any(part in driver.current_url for part in just_clk_part):
         next_click(driver)
+        bypass_wait = True
+    else:
+        print("No URL match")
     
     # if "form/review" in driver.current_url:
     #     wb_btn_click(driver)
