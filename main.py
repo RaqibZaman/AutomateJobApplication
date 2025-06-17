@@ -221,10 +221,6 @@ def next_click(driver):
     # make case insensitive for find_elements
     # list of key words to click?
 
-    # if tag == "span":
-    #     txt = e.text.strip()
-    #     print(f"Text: {txt}")
-
     # I need a list of keywords to check for like Continue or Submit, if its there, then click it
 
     # spans = driver.find_elements(By.XPATH, "//span[contains(text(),'Continue')]")
@@ -260,11 +256,10 @@ def wb_radio_click(driver):
     if visible:
         visible[0].click()
 
-
 # import data from excel file. column[A]=Labels column[B]=Values for form input
-excel_data = pd.read_excel("excel_files/FormLabels&Inputs.xlsx")    #format req: .xlsx
-# show some first rows
-print(excel_data.head())
+# ouputs DataFrame, which is like a 2D array (i.e. table with row & col)
+excel_df = pd.read_excel("excel_files/FormLabels&Inputs.xlsx")    #format req: .xlsx
+print(excel_df.head())  # show some first rows
 
 ctrl_w = Window()
 
@@ -283,6 +278,18 @@ while ctrl_w.keep_alive:
     just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply"]
     if any(part in driver.current_url for part in just_clk_part):
         next_click(driver)
+        # ?? return document.readyState == "complete" && jQuery.active == 0
+        # Let webdriver catch up
+        WebDriverWait(driver, 10).until(
+            lambda dr: dr.execute_script("return document.readyState") == "complete"
+        )
+
+        # above doesn't work. Need to wait until the button text for next_click is detected.
+        # clk_keywords = ["continue", "submit", "return to job search"]
+
+
+
+        continue
     else:
         print("No URL match")
     
@@ -296,10 +303,9 @@ while ctrl_w.keep_alive:
         
     
     label_elst_pairs = get_label_elist_pairs(vis_elements)
-    print(label_elst_pairs)
+    print(f"labelPairs: {label_elst_pairs}")
+    # if element is a label, I want to check the conents of label text
     for pair in label_elst_pairs:
-        # if pair[0].get_attribute("type") == "label":
-        # if element is a label, I want to check the conents of label text
         yes_txt = ["Are you a US Citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience", "Will you be able to reliably commute", ]
         yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
         label_txt = pair[0].text.strip().lower()
