@@ -72,12 +72,16 @@ Dev Notes:
 # You should check the load order of the DOM in terms of first/last. And put the expected condition (EC) as what loads close to last, I suppose.
 #wait = WebDriverWait(driver, 30)
 #wait.until(EC.)
+# map() func executes a function for each item in an iterable/list. so its map(func, iterable), takes 2 params. You don't need to add () to func in the map.
+# rem, a =+ 5 is same as a= +5, so positive int. Not what I want.
+# I tried WebDriverWait().until() for an expected condition, but it seems like I would have to individually find one for each page, otherwise I get a stale error or the like for webdriver. For the sake of simplicity, I'll use time.sleep() until I want to optimize the app later on.
 '''
 
 # module openpyxl (installed) is used by pandas but you don't need to import it
-import subprocess
+import logging
 import pandas as pd
 import requests
+import subprocess
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -86,6 +90,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import tkinter as tk
+
+logging.basicConfig(level=logging.ERROR)
 
 class Window:
     def __init__(self):
@@ -216,18 +222,16 @@ def wbdr_print(btns):
         #print(f"{i}. {b.get_attribute('outerHTML')}")
 
 # webdriver: click button
-def next_click(driver):
+def skip_clk(driver):
     # if target text is in span
     # make case insensitive for find_elements
     # list of key words to click?
 
     # I need a list of keywords to check for like Continue or Submit, if its there, then click it
-
-    # spans = driver.find_elements(By.XPATH, "//span[contains(text(),'Continue')]")
     
-    spans = driver.find_elements(By.XPATH, "//button")
-    visible = [b for b in spans if b.is_displayed()]    # go through each item and apply a boolean-return function
-    print(f"{len(visible)} are visible")
+    btns = driver.find_elements(By.XPATH, "//button")
+    visible = [b for b in btns if b.is_displayed()]    # go through each item and apply a boolean-return function
+    print(f"{len(visible)} buttons are visible")
     clk_keywords = ["continue", "submit", "return to job search"]
     for v in visible:
         txt = v.text.strip().lower()
@@ -269,28 +273,24 @@ if not is_chr_debug_act():
 options = Options()
 options.add_experimental_option("debuggerAddress", "localhost:9222")  # align selenium to that chrome window
 driver = webdriver.Chrome(options=options)     # launch chrome with selenium attached to it
-
+skip = False
 while ctrl_w.keep_alive:
     if ctrl_w.keep_alive == False:
         print("I'm dying!!! argh...")
         break
 
     just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply"]
+    # There's a bug where driver.current_url picks up the url from the previous page
+    # which is bad for automation and causing bugs.
     if any(part in driver.current_url for part in just_clk_part):
-        next_click(driver)
-        # ?? return document.readyState == "complete" && jQuery.active == 0
-        # Let webdriver catch up
-        WebDriverWait(driver, 10).until(
-            lambda dr: dr.execute_script("return document.readyState") == "complete"
-        )
-
-        # above doesn't work. Need to wait until the button text for next_click is detected.
-        # clk_keywords = ["continue", "submit", "return to job search"]
-
-
-
+        if skip:
+            # Let webdriver catch up
+            time.sleep(7)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
+        skip_clk(driver)
+        skip = True
         continue
     else:
+        skip = False
         print("No URL match")
     
     
