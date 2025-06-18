@@ -279,13 +279,11 @@ while ctrl_w.keep_alive:
         print("I'm dying!!! argh...")
         break
 
+    if skip:
+            # Let webdriver catch up, otherwise driver.current_url uses previous url
+            time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
     just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply"]
-    # There's a bug where driver.current_url picks up the url from the previous page
-    # which is bad for automation and causing bugs.
     if any(part in driver.current_url for part in just_clk_part):
-        if skip:
-            # Let webdriver catch up
-            time.sleep(7)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
         skip_clk(driver)
         skip = True
         continue
@@ -299,32 +297,34 @@ while ctrl_w.keep_alive:
 
     driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
     #print(driver.window_handles)
-    vis_elements = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
-        
-    
-    label_elst_pairs = get_label_elist_pairs(vis_elements)
-    print(f"labelPairs: {label_elst_pairs}")
-    # if element is a label, I want to check the conents of label text
-    for pair in label_elst_pairs:
-        yes_txt = ["Are you a US Citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience", "Will you be able to reliably commute", ]
+
+    # A label may follow a label, and then the relevant input. So filtering by label doesn't always work
+    vis_e_lst = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
+    vis_len = len(vis_e_lst)    
+    for idx, e in enumerate(vis_e_lst):
+        yes_txt = ["Are you a US Citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience", "Will you be able to reliably commute", "receiving text communications"]
         yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
-        label_txt = pair[0].text.strip().lower()
-        if any(txt in label_txt for txt in yes_txt):
+        
+        e_txt = e.text.strip().lower()
+        if any(txt in e_txt for txt in yes_txt):
             print("It's a match!")
-            # found a label that I want to say yes to! find associated input val (radio for now)
-            # pair[1]: access list of elements associated with label
-            # check if element is: tag_name:input, type:radio, value:yes
-            match = None
-            for e in pair[1]:
-                if (
-                    e.tag_name == "input" and
-                    e.get_attribute("type") == "radio" and
-                    e.get_attribute("value") == "yes"
-                ):
-                    match = e
+            # element tag_names in page_visible_info(): input, button, label, select
+            # I have a current index of vis_e_lst, check if its an input.
+            # If not, check next element in vis_e_lst. Up to 2
+            # don't go outside of list, range starts at 0. range(2) = 0, 1
+            for i in range(3):
+                if idx + i > vis_len:
+                    print("out of vis_len range")
                     break
-            if match:
-                match.click()
+                
+                ee = vis_e_lst[idx + i]
+                if (
+                    ee.tag_name == "input" and
+                    ee.get_attribute("type") == "radio" and
+                    ee.get_attribute("value") == "yes"
+                ):
+                    ee.click()
+                print("checked for entering input")
         else:
             print("no label match")
 
