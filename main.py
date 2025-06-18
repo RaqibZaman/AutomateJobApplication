@@ -324,6 +324,7 @@ while ctrl_w.keep_alive:
                     ee.get_attribute("value") == "yes"
                 ):
                     ee.click()
+                    break
                 print("checked for entering input")
         else:
             print("no label match")
