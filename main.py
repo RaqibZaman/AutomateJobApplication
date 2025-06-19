@@ -95,30 +95,38 @@ logging.basicConfig(level=logging.ERROR)
 
 class Window:
     def __init__(self):
-        self.frame = tk.Tk()
+        self.main = tk.Tk()
         self.go_signal = tk.BooleanVar(value=False)
-        self.frame.title("Auto Job Applier")
+        self.main.title("Auto Job Applier")
         self.keep_alive = True
-        self.frame.attributes("-topmost", True)
+        self.main.attributes("-topmost", True)
 
         # put window in the center of the screen, QoL
-        win_w = 200
-        win_h = 100
-        screen_w = self.frame.winfo_screenwidth()
-        screen_h = self.frame.winfo_screenheight()
+        win_w = 300
+        win_h = 200
+        screen_w = self.main.winfo_screenwidth()
+        screen_h = self.main.winfo_screenheight()
         x = (screen_w // 2) - (win_w // 2)
         y = (screen_h // 2) - (win_h // 2)
-        # self.frame.geometry("200x100")
-        self.frame.geometry(f"{win_w}x{win_h}+{x}+{y}")
+        self.main.geometry(f"{win_w}x{win_h}+{x}+{y}")
 
+        # row 1
+        self.r1 = tk.Frame(self.main)
+        self.r1.pack(fill=tk.BOTH, expand=True)
 
         # Stop Go buttons
-        go_btn = tk.Button(self.frame, text="Go", bg="green", fg="white", command=self.go_action)
-        go_btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=10)
+        go_btn = tk.Button(self.r1, text="Go", bg="green", fg="white", command=self.go_action)
+        go_btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=(10,5))
 
-        stop_btn = tk.Button(self.frame, text="Stop", bg="red", fg="white", command=self.stop_action)
-        stop_btn.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH, padx=5, pady=10)
-        #self.frame.mainloop()
+        stop_btn = tk.Button(self.r1, text="Stop", bg="red", fg="white", command=self.stop_action)
+        stop_btn.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH, padx=5, pady=(10,5))
+
+        # row 2
+        self.r2 = tk.Frame(self.main)
+        self.r2.pack(fill=tk.BOTH, expand=True)
+
+        update_excel_btn = tk.Button(self.r2, text="Update Excel", bg="orange", fg="white", command=self.update_excel)
+        update_excel_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=(5,10))
 
     def go_action(self):
         print("GO!")
@@ -128,6 +136,9 @@ class Window:
         print("STOP!!!")
         self.go_signal.set(True)
         self.keep_alive = False
+
+    def update_excel(self):
+        print("updating excel (test)")
 
 
 ### Helper Functions ###
@@ -265,6 +276,11 @@ def wb_radio_click(driver):
 excel_df = pd.read_excel("excel_files/FormLabels&Inputs.xlsx")    #format req: .xlsx
 print(excel_df.head())  # show some first rows
 
+# Process: read the labels of a webpage, and based on that decide action on input{select, text, radio}
+# read excel with col[0]: questions/prompt
+excel_QTV = pd.read_excel("Q_T_V.xlsx")
+print(excel_QTV.head())
+
 ctrl_w = Window()
 
 if not is_chr_debug_act():
@@ -292,7 +308,7 @@ while ctrl_w.keep_alive:
         print("No URL match")
     
     
-    ctrl_w.frame.wait_variable(ctrl_w.go_signal)    # wait_variable checks variable modified not value
+    ctrl_w.main.wait_variable(ctrl_w.go_signal)    # wait_variable checks variable modified not value
     print("continue auto filling forms")
 
     driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
@@ -302,16 +318,17 @@ while ctrl_w.keep_alive:
     vis_e_lst = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
     vis_len = len(vis_e_lst)    
     for idx, e in enumerate(vis_e_lst):
-        # So instead of a  list of matches for radio button value "yes", I could just use a dictionary where you match the string
-        #, and the associated value is what action to do with that string i.e. "yes" "no", etc.
+        # load information into excel_QTV: Question/prompt, type, value
+        # access the data frame, check Questions column if it matches label text
+        # then check the excel type with webelement type
+        # If that matches, apply value
+
         
-        yes_txt = ["Are you a US Citizen", "are you a u.s. citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience",
-                   "Will you be able to reliably commute", "receiving text communications"]
+        yes_txt = ["Are you a US Citizen", "are you a u.s. citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience", "Will you be able to reliably commute", "receiving text communications"]
         yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
-        no_txt = []
-        decision_dict = {}
+        
         e_txt = e.text.strip().lower()
-        print(e_txt)
+        #print(e_txt)
         if any(txt in e_txt for txt in yes_txt):
             print("It's a match!")
             # element tag_names in page_visible_info(): input, button, label, select
@@ -336,6 +353,6 @@ while ctrl_w.keep_alive:
             print("no label match")
 
 
-ctrl_w.frame.destroy()  # kill gui instead???
-ctrl_w.frame.mainloop() # keep gui open after script runs
+ctrl_w.main.destroy()  # kill gui instead???
+ctrl_w.main.mainloop() # keep gui open after script runs
 
