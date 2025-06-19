@@ -302,10 +302,16 @@ while ctrl_w.keep_alive:
     vis_e_lst = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
     vis_len = len(vis_e_lst)    
     for idx, e in enumerate(vis_e_lst):
-        yes_txt = ["Are you a US Citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience", "Will you be able to reliably commute", "receiving text communications"]
-        yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
+        # So instead of a  list of matches for radio button value "yes", I could just use a dictionary where you match the string
+        #, and the associated value is what action to do with that string i.e. "yes" "no", etc.
         
+        yes_txt = ["Are you a US Citizen", "are you a u.s. citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience",
+                   "Will you be able to reliably commute", "receiving text communications"]
+        yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
+        no_txt = []
+        decision_dict = {}
         e_txt = e.text.strip().lower()
+        print(e_txt)
         if any(txt in e_txt for txt in yes_txt):
             print("It's a match!")
             # element tag_names in page_visible_info(): input, button, label, select
