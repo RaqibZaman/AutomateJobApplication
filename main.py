@@ -367,7 +367,7 @@ while ctrl_win.keep_alive:
                 test6 = value
                 if (
                     ee.tag_name == "input" and
-                    ee.get_attribute("type") == "radio" == type and
+                    ee.get_attribute("type") == "radio" == type
                 ):
                     # indeed has val 1:yes, 0:no
                     y_n_map = {"yes": 1, "no": 0}
