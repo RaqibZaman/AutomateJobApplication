@@ -86,7 +86,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import tkinter as tk
@@ -97,6 +97,7 @@ class Window:
     def __init__(self):
         self.main = tk.Tk()
         self.go_signal = tk.BooleanVar(value=False)
+        self.excel_QTV = pd.read_excel("Q_T_V.xlsx")
         self.main.title("Auto Job Applier")
         self.keep_alive = True
         self.main.attributes("-topmost", True)
@@ -138,7 +139,9 @@ class Window:
         self.keep_alive = False
 
     def update_excel(self):
-        print("updating excel (test)")
+        print("updating excel (assuming you added change to excel file and saved)")
+        self.excel_QTV = pd.read_excel("Q_T_V.xlsx")
+        # exceldf.to_excel("updated.xlsx", index=False)
 
 
 ### Helper Functions ###
@@ -194,9 +197,19 @@ def page_visible_info(driver):
         if tag == "button":
             txt = e.text.strip()
             print(f"Text: {txt}")
+            type = e.get_attribute("type")
+            val = e.get_attribute("value")
+            name = e.get_attribute("name")
+            print(f"Type: {type}, Value: {val}, \nName: {name}")
 
         if tag == "label":
             print(f"Label text: {e.text.strip()}")
+
+        if tag == "select":
+            type = e.get_attribute("type")
+            val = e.get_attribute("value")
+            name = e.get_attribute("name")
+            print(f"Type: {type}, Value: {val}, \nName: {name}")
 
     return visible
 
@@ -278,10 +291,11 @@ print(excel_df.head())  # show some first rows
 
 # Process: read the labels of a webpage, and based on that decide action on input{select, text, radio}
 # read excel with col[0]: questions/prompt
-excel_QTV = pd.read_excel("Q_T_V.xlsx")
-print(excel_QTV.head())
+
 
 ctrl_w = Window()
+#ctrl_w.excel_QTV = pd.read_excel("Q_T_V.xlsx")
+print(ctrl_w.excel_QTV.head())
 
 if not is_chr_debug_act():
     act_chr_debug()
@@ -326,31 +340,54 @@ while ctrl_w.keep_alive:
         
         yes_txt = ["Are you a US Citizen", "are you a u.s. citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience", "Will you be able to reliably commute", "receiving text communications"]
         yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
-        
+
         e_txt = e.text.strip().lower()
-        #print(e_txt)
-        if any(txt in e_txt for txt in yes_txt):
-            print("It's a match!")
-            # element tag_names in page_visible_info(): input, button, label, select
+        # element tag_names in page_visible_info(): input, button, label, select
             # I have a current index of vis_e_lst, check if its an input.
             # If not, check next element in vis_e_lst. Up to 2
             # don't go outside of list, range starts at 0. range(2) = 0, 1
+        a_match = ctrl_w.excel_QTV[ctrl_w.excel_QTV.iloc[:,0].apply(
+            lambda quest: str(quest).lower() in e_txt.lower()
+        )]
+
+        if not a_match.empty:
+            print("It's a match!")
+            # I need to learn how .iloc works a bit more
+            type = str(a_match.iloc[0,1]).lower().strip()
+            value = str(a_match.iloc[0,2]).strip()  # case-sensitive i.e. "Weekday" for select's option val
+
             for i in range(3):
                 if idx + i > vis_len:
                     print("out of vis_len range")
                     break
                 
-                ee = vis_e_lst[idx + i]
+                ee = vis_e_lst[idx + i] # I matched the label txt, now I am going to the next input element
                 if (
                     ee.tag_name == "input" and
-                    ee.get_attribute("type") == "radio" and
-                    ee.get_attribute("value") == "yes"
+                    ee.get_attribute("type") == "radio" == type and
+                    ee.get_attribute("value") == value  # yes/no
+                ):
+                    ee.click()
+                    break
+                if (
+                    ee.tag_name == "select" and
+                    ee.get_attribute("type") == "select-one" == type
+                ):
+                    print("test")
+                    Select(ee).select_by_value(value)
+                    break
+                if (
+                    ee.tag_name == "button" == type and
+                    ee.text.strip() == value
+                    #ee.get_attribute("type") == type and
+                    #ee.get_attribute("value") == value  # yes/no
                 ):
                     ee.click()
                     break
                 print("checked for entering input")
         else:
-            print("no label match")
+            pass
+            #print("no label match")
 
 
 ctrl_w.main.destroy()  # kill gui instead???
