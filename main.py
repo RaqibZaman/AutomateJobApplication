@@ -97,7 +97,8 @@ class Window:
     def __init__(self):
         self.main = tk.Tk()
         self.go_signal = tk.BooleanVar(value=False)
-        self.excel_QTV = pd.read_excel("Q_T_V.xlsx")
+        self.excel_QTV = pd.read_excel("Q_T_V.xlsx")    # Col: Question, Type, Value
+        self.excel_PI = pd.read_excel("excel_files/FormLabels&Inputs.xlsx") # Personal Information: Col:: label, input_value
         self.main.title("Auto Job Applier")
         self.keep_alive = True
         self.main.attributes("-topmost", True)
@@ -129,6 +130,10 @@ class Window:
         update_excel_btn = tk.Button(self.r2, text="Update Excel", bg="orange", fg="white", command=self.update_excel)
         update_excel_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=(5,10))
 
+        # test excel files
+        print(self.excel_QTV.head())
+        print(self.excel_PI.head())
+
     def go_action(self):
         print("GO!")
         self.go_signal.set(True)
@@ -147,7 +152,7 @@ class Window:
 ### Helper Functions ###
 
 # requests: check if chrome window is in debug mode
-def is_chr_debug_act(port=9222):
+def is_chrome_debug_mode(port=9222):
     try:
         r= requests.get(f"http://localhost:{port}/json/version", timeout=2)
         print("Chrome is in debug mode")
@@ -158,7 +163,7 @@ def is_chr_debug_act(port=9222):
         return False
 
 # _: launch chrome in debug mode
-def act_chr_debug():
+def launch_chrome_debug_mode():
     chrome_path = r'"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"'
     user_data_dir = r"D:\chrome-dev-profile"
     url = "https://www.indeed.com"
@@ -284,34 +289,31 @@ def wb_radio_click(driver):
     if visible:
         visible[0].click()
 
-# import data from excel file. column[A]=Labels column[B]=Values for form input
-# ouputs DataFrame, which is like a 2D array (i.e. table with row & col)
-excel_df = pd.read_excel("excel_files/FormLabels&Inputs.xlsx")    #format req: .xlsx
-print(excel_df.head())  # show some first rows
+### START ###
+ctrl_win = Window()
 
-# Process: read the labels of a webpage, and based on that decide action on input{select, text, radio}
-# read excel with col[0]: questions/prompt
-
-
-ctrl_w = Window()
-#ctrl_w.excel_QTV = pd.read_excel("Q_T_V.xlsx")
-print(ctrl_w.excel_QTV.head())
-
-if not is_chr_debug_act():
-    act_chr_debug()
+if not is_chrome_debug_mode():
+    launch_chrome_debug_mode()
     
 options = Options()
 options.add_experimental_option("debuggerAddress", "localhost:9222")  # align selenium to that chrome window
 driver = webdriver.Chrome(options=options)     # launch chrome with selenium attached to it
 skip = False
-while ctrl_w.keep_alive:
-    if ctrl_w.keep_alive == False:
+
+# control flow
+# 1. check if url is automatable
+# 2. if automation button (start) is executed, keep automating until return to job search is reached?
+# 3. if no valid value to input into input element found, stop automation.
+
+while ctrl_win.keep_alive:
+    if ctrl_win.keep_alive == False:
         print("I'm dying!!! argh...")
         break
 
     if skip:
             # Let webdriver catch up, otherwise driver.current_url uses previous url
-            time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
+            time.sleep(1)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
+    
     just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply"]
     if any(part in driver.current_url for part in just_clk_part):
         skip_clk(driver)
@@ -321,8 +323,7 @@ while ctrl_w.keep_alive:
         skip = False
         print("No URL match")
     
-    
-    ctrl_w.main.wait_variable(ctrl_w.go_signal)    # wait_variable checks variable modified not value
+    ctrl_win.main.wait_variable(ctrl_win.go_signal)    # wait_variable checks variable modified not value
     print("continue auto filling forms")
 
     driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
@@ -332,27 +333,21 @@ while ctrl_w.keep_alive:
     vis_e_lst = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
     vis_len = len(vis_e_lst)    
     for idx, e in enumerate(vis_e_lst):
-        # load information into excel_QTV: Question/prompt, type, value
-        # access the data frame, check Questions column if it matches label text
-        # then check the excel type with webelement type
-        # If that matches, apply value
-
-        
-        yes_txt = ["Are you a US Citizen", "are you a u.s. citizen","Do you have a Bachelor's Degree", "Do you have the necessary experience", "Will you be able to reliably commute", "receiving text communications"]
-        yes_txt = list(map(str.lower, yes_txt)) # lower case yes_txt XD
+        # 1. load information into excel_QTV: Question/prompt, type, value
+        # 2. check if Questions column of dataframe matches WebElement label text
 
         e_txt = e.text.strip().lower()
         # element tag_names in page_visible_info(): input, button, label, select
             # I have a current index of vis_e_lst, check if its an input.
             # If not, check next element in vis_e_lst. Up to 2
             # don't go outside of list, range starts at 0. range(2) = 0, 1
-        a_match = ctrl_w.excel_QTV[ctrl_w.excel_QTV.iloc[:,0].apply(
+        a_match = ctrl_win.excel_QTV[ctrl_win.excel_QTV.iloc[:,0].apply(
             lambda quest: str(quest).lower() in e_txt.lower()
         )]
 
         if not a_match.empty:
             print("It's a match!")
-            # I need to learn how .iloc works a bit more
+            # .iloc[row, col]
             type = str(a_match.iloc[0,1]).lower().strip()
             value = str(a_match.iloc[0,2]).strip()  # case-sensitive i.e. "Weekday" for select's option val
 
@@ -362,13 +357,24 @@ while ctrl_w.keep_alive:
                     break
                 
                 ee = vis_e_lst[idx + i] # I matched the label txt, now I am going to the next input element
+                # input: radio
+                test0 = e_txt
+                test1 = ee.tag_name
+                test2 = ee.text.strip().lower()
+                test3 = ee.get_attribute("type")
+                test4 = ee.get_attribute("value")
+                test5 = type
+                test6 = value
                 if (
                     ee.tag_name == "input" and
                     ee.get_attribute("type") == "radio" == type and
-                    ee.get_attribute("value") == value  # yes/no
                 ):
-                    ee.click()
-                    break
+                    # indeed has val 1:yes, 0:no
+                    y_n_map = {"yes": 1, "no": 0}
+                    if (ee.get_attribute("value") == y_n_map[value]):
+                        ee.click()
+                        break
+                # select: select-one
                 if (
                     ee.tag_name == "select" and
                     ee.get_attribute("type") == "select-one" == type
@@ -376,6 +382,7 @@ while ctrl_w.keep_alive:
                     print("test")
                     Select(ee).select_by_value(value)
                     break
+                # button: 
                 if (
                     ee.tag_name == "button" == type and
                     ee.text.strip() == value
@@ -383,13 +390,13 @@ while ctrl_w.keep_alive:
                     #ee.get_attribute("value") == value  # yes/no
                 ):
                     ee.click()
+                    skip = True     # delay automation to let the page load for skip_clk()
                     break
                 print("checked for entering input")
         else:
             pass
             #print("no label match")
 
-
-ctrl_w.main.destroy()  # kill gui instead???
-ctrl_w.main.mainloop() # keep gui open after script runs
+ctrl_win.main.destroy()  # kill gui instead???
+ctrl_win.main.mainloop() # keep gui open after script runs
 
