@@ -147,6 +147,7 @@ class Window:
     def update_excel(self):
         print("updating excel (assuming you added change to excel file and saved)")
         self.excel_QTV = pd.read_excel("Q_T_V.xlsx")
+        print(self.excel_QTV.tail())
         # exceldf.to_excel("updated.xlsx", index=False)
 
 
@@ -366,7 +367,9 @@ while ctrl_win.keep_alive:
                             ee.click()
                             break
                     if(ee.get_attribute("type") == "text" == type):
-                        pass
+                        ee.clear()
+                        ee.send_keys(value)
+                        break
                 # select: select-one
                 if (
                     ee.tag_name == "select" and
