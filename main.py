@@ -76,6 +76,11 @@ Dev Notes:
 # rem, a =+ 5 is same as a= +5, so positive int. Not what I want.
 # I tried WebDriverWait().until() for an expected condition, but it seems like I would have to individually find one for each page, otherwise I get a stale error or the like for webdriver. For the sake of simplicity, I'll use time.sleep() until I want to optimize the app later on.
 # pd.read_excel outputs a DataFrame, which is like a 2D array. Think of a list of lists. The outer list is the rows by index, the inner list is the columns by index.
+###
+# In case Selenium fails me, remember that it can use jQuery to find the right element e.g.
+# driver.execute_script("$('#username').val('FirstNameTxt');")
+###
+# I need to make sure that there is a 1 to 1 relationship to interactable web elements and automated action
 '''
 
 # module openpyxl (installed) is used by pandas but you don't need to import it
@@ -182,7 +187,7 @@ def page_visible_info(driver):
     gui_ele = driver.find_elements(
         By.XPATH,
         # "//input | //button//span | //select | //label"
-        "//input | //button | //select | //label"
+        "//input | //button | //select | //label | //textarea"
     )
     visible = [e for e in gui_ele if e.is_displayed()]
 
@@ -197,9 +202,11 @@ def page_visible_info(driver):
             name = e.get_attribute("name")
             print(f"Type: {type}, Value: {val}, \nName: {name}")
         
-        # if tag == "span":
-        #     txt = e.text.strip()
-        #     print(f"Text: {txt}")
+        if tag == "textarea":
+            type = e.get_attribute("type")
+            val = e.get_attribute("value")
+            name = e.get_attribute("name")
+            print(f"Type: {type}, Value: {val}, \nName: {name}")
 
         if tag == "button":
             txt = e.text.strip()
@@ -263,7 +270,7 @@ def skip_clk(driver):
     btns = driver.find_elements(By.XPATH, "//button")
     visible = [b for b in btns if b.is_displayed()]    # go through each item and apply a boolean-return function
     print(f"{len(visible)} buttons are visible")
-    clk_keywords = ["continue", "submit", "return to job search"]
+    clk_keywords = ["continue", "submit", "return to job search", "apply anyway"]
     for v in visible:
         txt = v.text.strip().lower()
         print(f"button text: {txt}")
@@ -309,9 +316,9 @@ while ctrl_win.keep_alive:
 
     if skip:
             # Let webdriver catch up, otherwise driver.current_url uses previous url
-            time.sleep(1)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
+            time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
     
-    just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply"]
+    just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply", "questions-module/intervention"]
     if any(part in driver.current_url for part in just_clk_part):
         skip_clk(driver)
         skip = True
@@ -354,20 +361,26 @@ while ctrl_win.keep_alive:
                     break
                 
                 ee = vis_e_lst[idx + i] # I matched the label txt, now I am going to the next input element
-                # input: radio
+                # input
                 if (ee.tag_name == "input"):
+                    # radio input
                     if(ee.get_attribute("type") == "radio" == type):
                         # indeed has val 1:yes, 0:no
                         y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}
                         # input value can be 1, 0, or some other text
                         # for radio buttons that are more than 3, I need to find a way to just search directly instead of iterating through everything...
                         if (ee.get_attribute("value") == y_n_map.get(value, "") 
-                            or ee.get_attribute("value") == value
+                            or ee.get_attribute("value").lower() == value.lower()
                         ):
                             ee.click()
                             break
+                    # text input
                     if(ee.get_attribute("type") == "text" == type):
-                        ee.clear()
+                        # clear content before adding value
+                        ee.click()
+                        ee.send_keys(Keys.CONTROL + "a")
+                        ee.send_keys(Keys.DELETE)
+                        #ee.clear()
                         ee.send_keys(value)
                         break
                 # select: select-one
@@ -378,6 +391,17 @@ while ctrl_win.keep_alive:
                     print("test")
                     Select(ee).select_by_value(value)
                     break
+                # textarea
+                if (ee.tag_name == "textarea"):
+                    # clear content before adding value
+                    ee.click()
+                    ee.send_keys(Keys.CONTROL + "a")
+                    ee.send_keys(Keys.DELETE)
+                    #ee.clear()
+                    ee.send_keys(value)
+                    print("this is a textarea")
+                    break
+                
                 # button: 
                 if (
                     ee.tag_name == "button" == type and
