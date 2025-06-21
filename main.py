@@ -75,6 +75,7 @@ Dev Notes:
 # map() func executes a function for each item in an iterable/list. so its map(func, iterable), takes 2 params. You don't need to add () to func in the map.
 # rem, a =+ 5 is same as a= +5, so positive int. Not what I want.
 # I tried WebDriverWait().until() for an expected condition, but it seems like I would have to individually find one for each page, otherwise I get a stale error or the like for webdriver. For the sake of simplicity, I'll use time.sleep() until I want to optimize the app later on.
+# pd.read_excel outputs a DataFrame, which is like a 2D array. Think of a list of lists. The outer list is the rows by index, the inner list is the columns by index.
 '''
 
 # module openpyxl (installed) is used by pandas but you don't need to import it
@@ -270,11 +271,6 @@ def skip_clk(driver):
             v.click()
             break
 
-    # check contents of span
-
-    # if visible:
-    #     visible[0].click()
-
 # ...
 def wb_radio_click(driver):
     # Find radio buttons
@@ -351,29 +347,26 @@ while ctrl_win.keep_alive:
             type = str(a_match.iloc[0,1]).lower().strip()
             value = str(a_match.iloc[0,2]).strip()  # case-sensitive i.e. "Weekday" for select's option val
 
-            for i in range(3):
-                if idx + i > vis_len:
+            for i in range(9):
+                if idx + i >= vis_len:
                     print("out of vis_len range")
                     break
                 
                 ee = vis_e_lst[idx + i] # I matched the label txt, now I am going to the next input element
                 # input: radio
-                test0 = e_txt
-                test1 = ee.tag_name
-                test2 = ee.text.strip().lower()
-                test3 = ee.get_attribute("type")
-                test4 = ee.get_attribute("value")
-                test5 = type
-                test6 = value
-                if (
-                    ee.tag_name == "input" and
-                    ee.get_attribute("type") == "radio" == type
-                ):
-                    # indeed has val 1:yes, 0:no
-                    y_n_map = {"yes": 1, "no": 0}
-                    if (ee.get_attribute("value") == y_n_map[value]):
-                        ee.click()
-                        break
+                if (ee.tag_name == "input"):
+                    if(ee.get_attribute("type") == "radio" == type):
+                        # indeed has val 1:yes, 0:no
+                        y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}
+                        # input value can be 1, 0, or some other text
+                        # for radio buttons that are more than 3, I need to find a way to just search directly instead of iterating through everything...
+                        if (ee.get_attribute("value") == y_n_map.get(value, "") 
+                            or ee.get_attribute("value") == value
+                        ):
+                            ee.click()
+                            break
+                    if(ee.get_attribute("type") == "text" == type):
+                        pass
                 # select: select-one
                 if (
                     ee.tag_name == "select" and
