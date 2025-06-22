@@ -81,6 +81,7 @@ Dev Notes:
 # driver.execute_script("$('#username').val('FirstNameTxt');")
 ###
 # I need to make sure that there is a 1 to 1 relationship to interactable web elements and automated action
+# I could map the label matches, so I could use that to limit the search range of vis_e_lst
 '''
 
 # module openpyxl (installed) is used by pandas but you don't need to import it
@@ -338,8 +339,8 @@ def automate_v1(driver: webdriver, ctrl_win: Window):
             if not a_match.empty:
                 print("It's a match!")
                 # .iloc[row, col]
-                type = str(a_match.iloc[0,1]).lower().strip()
-                value = str(a_match.iloc[0,2]).strip()  # case-sensitive i.e. "Weekday" for select's option val
+                type = str(a_match.iloc[0,1]).strip().lower()
+                value = str(a_match.iloc[0,2]).strip().lower()
 
                 for i in range(9):
                     if idx + i >= vis_len:
@@ -355,11 +356,18 @@ def automate_v1(driver: webdriver, ctrl_win: Window):
                             y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}
                             # input value can be 1, 0, or some other text
                             # for radio buttons that are more than 3, I need to find a way to just search directly instead of iterating through everything...
+                            # Answer: get parent element of input
                             if (ee.get_attribute("value") == y_n_map.get(value, "") 
                                 or ee.get_attribute("value").lower() == value.lower()
                             ):
                                 ee.click()
                                 break
+                            else:
+                                # check parent element, which should be label. Its text should indicate if input is valid
+                                parent_ee = ee.find_element(By.XPATH, "..") # .. means go up one level
+                                if parent_ee.text.strip().lower() == value:
+                                    ee.click()
+                                    break
                         # text input
                         if(ee.get_attribute("type") == "text" == type):
                             # clear content before adding value
@@ -391,9 +399,7 @@ def automate_v1(driver: webdriver, ctrl_win: Window):
                     # button: 
                     if (
                         ee.tag_name == "button" == type and
-                        ee.text.strip() == value
-                        #ee.get_attribute("type") == type and
-                        #ee.get_attribute("value") == value  # yes/no
+                        ee.text.strip().lower() == value
                     ):
                         ee.click()
                         skip = True     # delay automation to let the page load for skip_clk()
@@ -402,59 +408,6 @@ def automate_v1(driver: webdriver, ctrl_win: Window):
             else:
                 pass
                 #print("no label match")
-
-# non-nonsense non-spagetti code here that actually makes sense
-def automate_v2():
-    # 1. find the label picked up I guess
-    # 2. by the labels, find the nest input or whatever elements
-        # //input | //button | //select | //textarea
-    # 3. Depending on what is found first, interact with it
-    # Work with the hierachy of DOM. Top-Down, nested nonsense
-    # later on, make automation functions according to the "profile" i.e.
-        # indeed.com will have one, workday will have one, and perhaps a default assignment
-    # ...
-    skip = False
-    while ctrl_win.keep_alive:
-        if ctrl_win.keep_alive == False:
-            print("I'm dying!!! argh...")
-            break
-
-        if skip:
-                # Let webdriver catch up, otherwise driver.current_url uses previous url
-                time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
-        
-        just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply", "questions-module/intervention"]
-        if any(part in driver.current_url for part in just_clk_part):
-            skip_clk(driver)
-            skip = True
-            continue
-        else:
-            skip = False
-            print("No URL match")
-        
-        ctrl_win.main.wait_variable(ctrl_win.go_signal)    # wait_variable checks variable modified not value
-        print("continue auto filling forms")
-
-        driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
-
-        vis_e_lst = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
-        vis_len = len(vis_e_lst)
-
-        for idx, e in enumerate(vis_e_lst):
-            e_txt = e.text.strip().lower()
-            a_match = ctrl_win.excel_QTV[ctrl_win.excel_QTV.iloc[:,0].apply(
-                lambda quest: str(quest).lower() in e_txt.lower()
-            )]
-
-            if not a_match.empty:
-                print("It's a match!")
-                type = str(a_match.iloc[0,1]).lower().strip()
-                value = str(a_match.iloc[0,2]).strip()  # case-sensitive i.e. "Weekday" for select's option val
-
-                # I have the element e. Is there a way to figure out the hierarchy here?
-                # e can be one of these: "//input | //button | //select | //label | //textarea"
-
-
 
 ### START ###
 ctrl_win = Window()
