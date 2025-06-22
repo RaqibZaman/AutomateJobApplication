@@ -259,25 +259,24 @@ def wbdr_print(btns):
         print(f"{i}. text: '{text}' | class: '{btn_class}'")
         #print(f"{i}. {b.get_attribute('outerHTML')}")
 
-# webdriver: click button
+# webdriver: skip irrelevant pages
 def skip_clk(driver):
-    # if target text is in span
-    # make case insensitive for find_elements
-    # list of key words to click?
-
-    # I need a list of keywords to check for like Continue or Submit, if its there, then click it
-    
-    btns = driver.find_elements(By.XPATH, "//button")
-    visible = [b for b in btns if b.is_displayed()]    # go through each item and apply a boolean-return function
-    print(f"{len(visible)} buttons are visible")
-    clk_keywords = ["continue", "submit", "return to job search", "apply anyway"]
-    for v in visible:
-        txt = v.text.strip().lower()
-        print(f"button text: {txt}")
-        if any(keyword in txt for keyword in clk_keywords):
-            print("clicked", v.text)
-            v.click()
-            break
+    try:
+        # webdriver stale head
+        btns = driver.find_elements(By.XPATH, "//button")
+        visible = [b for b in btns if b.is_displayed()]    # go through each item and apply a boolean-return function
+        print(f"{len(visible)} buttons are visible")
+        clk_keywords = ["continue", "submit", "return to job search", "apply anyway"]
+        for v in visible:
+            txt = v.text.strip().lower()
+            print(f"button text: {txt}")
+            if any(keyword in txt for keyword in clk_keywords):
+                print("clicked", v.text)
+                v.click()
+                break
+    except Exception as ex:
+        # let program keep running
+        print("too fast:", ex)
 
 # ...
 def wb_radio_click(driver):
@@ -333,7 +332,7 @@ def automate_v1(driver: webdriver, ctrl_win: Window):
                 # If not, check next element in vis_e_lst. Up to 2
                 # don't go outside of list, range starts at 0. range(2) = 0, 1
             a_match = ctrl_win.excel_QTV[ctrl_win.excel_QTV.iloc[:,0].apply(
-                lambda quest: str(quest).lower() in e_txt.lower()
+                lambda quest: str(quest).lower() in e_txt
             )]
 
             if not a_match.empty:
