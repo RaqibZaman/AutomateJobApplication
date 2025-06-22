@@ -186,7 +186,6 @@ def page_visible_info(driver):
     # Find the visible actionable UI elements of webpage
     gui_ele = driver.find_elements(
         By.XPATH,
-        # "//input | //button//span | //select | //label"
         "//input | //button | //select | //label | //textarea"
     )
     visible = [e for e in gui_ele if e.is_displayed()]
@@ -293,6 +292,170 @@ def wb_radio_click(driver):
     if visible:
         visible[0].click()
 
+# spagetti nonsense code goes here for historic purpose
+def automate_v1(driver: webdriver, ctrl_win: Window):
+    skip = False
+    while ctrl_win.keep_alive:
+        if ctrl_win.keep_alive == False:
+            print("I'm dying!!! argh...")
+            break
+
+        if skip:
+                # Let webdriver catch up, otherwise driver.current_url uses previous url
+                time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
+        
+        just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply", "questions-module/intervention"]
+        if any(part in driver.current_url for part in just_clk_part):
+            skip_clk(driver)
+            skip = True
+            continue
+        else:
+            skip = False
+            print("No URL match")
+        
+        ctrl_win.main.wait_variable(ctrl_win.go_signal)    # wait_variable checks variable modified not value
+        print("continue auto filling forms")
+
+        driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
+        #print(driver.window_handles)
+
+        # A label may follow a label, and then the relevant input. So filtering by label doesn't always work
+        vis_e_lst = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
+        vis_len = len(vis_e_lst)    
+        for idx, e in enumerate(vis_e_lst):
+            # 1. load information into excel_QTV: Question/prompt, type, value
+            # 2. check if Questions column of dataframe matches WebElement label text
+
+            e_txt = e.text.strip().lower()
+            # element tag_names in page_visible_info(): input, button, label, select
+                # I have a current index of vis_e_lst, check if its an input.
+                # If not, check next element in vis_e_lst. Up to 2
+                # don't go outside of list, range starts at 0. range(2) = 0, 1
+            a_match = ctrl_win.excel_QTV[ctrl_win.excel_QTV.iloc[:,0].apply(
+                lambda quest: str(quest).lower() in e_txt.lower()
+            )]
+
+            if not a_match.empty:
+                print("It's a match!")
+                # .iloc[row, col]
+                type = str(a_match.iloc[0,1]).lower().strip()
+                value = str(a_match.iloc[0,2]).strip()  # case-sensitive i.e. "Weekday" for select's option val
+
+                for i in range(9):
+                    if idx + i >= vis_len:
+                        print("out of vis_len range")
+                        break
+                    
+                    ee = vis_e_lst[idx + i] # I matched the label txt, now I am going to the next input element
+                    # input
+                    if (ee.tag_name == "input"):
+                        # radio input
+                        if(ee.get_attribute("type") == "radio" == type):
+                            # indeed has val 1:yes, 0:no
+                            y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}
+                            # input value can be 1, 0, or some other text
+                            # for radio buttons that are more than 3, I need to find a way to just search directly instead of iterating through everything...
+                            if (ee.get_attribute("value") == y_n_map.get(value, "") 
+                                or ee.get_attribute("value").lower() == value.lower()
+                            ):
+                                ee.click()
+                                break
+                        # text input
+                        if(ee.get_attribute("type") == "text" == type):
+                            # clear content before adding value
+                            ee.click()
+                            ee.send_keys(Keys.CONTROL + "a")
+                            ee.send_keys(Keys.DELETE)
+                            #ee.clear()
+                            ee.send_keys(value)
+                            break
+                    # select: select-one
+                    if (
+                        ee.tag_name == "select" and
+                        ee.get_attribute("type") == "select-one" == type
+                    ):
+                        print("test")
+                        Select(ee).select_by_value(value)
+                        break
+                    # textarea
+                    if (ee.tag_name == "textarea"):
+                        # clear content before adding value
+                        ee.click()
+                        ee.send_keys(Keys.CONTROL + "a")
+                        ee.send_keys(Keys.DELETE)
+                        #ee.clear()
+                        ee.send_keys(value)
+                        print("this is a textarea")
+                        break
+                    
+                    # button: 
+                    if (
+                        ee.tag_name == "button" == type and
+                        ee.text.strip() == value
+                        #ee.get_attribute("type") == type and
+                        #ee.get_attribute("value") == value  # yes/no
+                    ):
+                        ee.click()
+                        skip = True     # delay automation to let the page load for skip_clk()
+                        break
+                    print("checked for entering input")
+            else:
+                pass
+                #print("no label match")
+
+# non-nonsense non-spagetti code here that actually makes sense
+def automate_v2():
+    # 1. find the label picked up I guess
+    # 2. by the labels, find the nest input or whatever elements
+        # //input | //button | //select | //textarea
+    # 3. Depending on what is found first, interact with it
+    # Work with the hierachy of DOM. Top-Down, nested nonsense
+    # later on, make automation functions according to the "profile" i.e.
+        # indeed.com will have one, workday will have one, and perhaps a default assignment
+    # ...
+    skip = False
+    while ctrl_win.keep_alive:
+        if ctrl_win.keep_alive == False:
+            print("I'm dying!!! argh...")
+            break
+
+        if skip:
+                # Let webdriver catch up, otherwise driver.current_url uses previous url
+                time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
+        
+        just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply", "questions-module/intervention"]
+        if any(part in driver.current_url for part in just_clk_part):
+            skip_clk(driver)
+            skip = True
+            continue
+        else:
+            skip = False
+            print("No URL match")
+        
+        ctrl_win.main.wait_variable(ctrl_win.go_signal)    # wait_variable checks variable modified not value
+        print("continue auto filling forms")
+
+        driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
+
+        vis_e_lst = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
+        vis_len = len(vis_e_lst)
+
+        for idx, e in enumerate(vis_e_lst):
+            e_txt = e.text.strip().lower()
+            a_match = ctrl_win.excel_QTV[ctrl_win.excel_QTV.iloc[:,0].apply(
+                lambda quest: str(quest).lower() in e_txt.lower()
+            )]
+
+            if not a_match.empty:
+                print("It's a match!")
+                type = str(a_match.iloc[0,1]).lower().strip()
+                value = str(a_match.iloc[0,2]).strip()  # case-sensitive i.e. "Weekday" for select's option val
+
+                # I have the element e. Is there a way to figure out the hierarchy here?
+                # e can be one of these: "//input | //button | //select | //label | //textarea"
+
+
+
 ### START ###
 ctrl_win = Window()
 
@@ -302,120 +465,10 @@ if not is_chrome_debug_mode():
 options = Options()
 options.add_experimental_option("debuggerAddress", "localhost:9222")  # align selenium to that chrome window
 driver = webdriver.Chrome(options=options)     # launch chrome with selenium attached to it
-skip = False
 
-# control flow
-# 1. check if url is automatable
-# 2. if automation button (start) is executed, keep automating until return to job search is reached?
-# 3. if no valid value to input into input element found, stop automation.
+automate_v1(driver, ctrl_win)
 
-while ctrl_win.keep_alive:
-    if ctrl_win.keep_alive == False:
-        print("I'm dying!!! argh...")
-        break
 
-    if skip:
-            # Let webdriver catch up, otherwise driver.current_url uses previous url
-            time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
-    
-    just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply", "questions-module/intervention"]
-    if any(part in driver.current_url for part in just_clk_part):
-        skip_clk(driver)
-        skip = True
-        continue
-    else:
-        skip = False
-        print("No URL match")
-    
-    ctrl_win.main.wait_variable(ctrl_win.go_signal)    # wait_variable checks variable modified not value
-    print("continue auto filling forms")
-
-    driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
-    #print(driver.window_handles)
-
-    # A label may follow a label, and then the relevant input. So filtering by label doesn't always work
-    vis_e_lst = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
-    vis_len = len(vis_e_lst)    
-    for idx, e in enumerate(vis_e_lst):
-        # 1. load information into excel_QTV: Question/prompt, type, value
-        # 2. check if Questions column of dataframe matches WebElement label text
-
-        e_txt = e.text.strip().lower()
-        # element tag_names in page_visible_info(): input, button, label, select
-            # I have a current index of vis_e_lst, check if its an input.
-            # If not, check next element in vis_e_lst. Up to 2
-            # don't go outside of list, range starts at 0. range(2) = 0, 1
-        a_match = ctrl_win.excel_QTV[ctrl_win.excel_QTV.iloc[:,0].apply(
-            lambda quest: str(quest).lower() in e_txt.lower()
-        )]
-
-        if not a_match.empty:
-            print("It's a match!")
-            # .iloc[row, col]
-            type = str(a_match.iloc[0,1]).lower().strip()
-            value = str(a_match.iloc[0,2]).strip()  # case-sensitive i.e. "Weekday" for select's option val
-
-            for i in range(9):
-                if idx + i >= vis_len:
-                    print("out of vis_len range")
-                    break
-                
-                ee = vis_e_lst[idx + i] # I matched the label txt, now I am going to the next input element
-                # input
-                if (ee.tag_name == "input"):
-                    # radio input
-                    if(ee.get_attribute("type") == "radio" == type):
-                        # indeed has val 1:yes, 0:no
-                        y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}
-                        # input value can be 1, 0, or some other text
-                        # for radio buttons that are more than 3, I need to find a way to just search directly instead of iterating through everything...
-                        if (ee.get_attribute("value") == y_n_map.get(value, "") 
-                            or ee.get_attribute("value").lower() == value.lower()
-                        ):
-                            ee.click()
-                            break
-                    # text input
-                    if(ee.get_attribute("type") == "text" == type):
-                        # clear content before adding value
-                        ee.click()
-                        ee.send_keys(Keys.CONTROL + "a")
-                        ee.send_keys(Keys.DELETE)
-                        #ee.clear()
-                        ee.send_keys(value)
-                        break
-                # select: select-one
-                if (
-                    ee.tag_name == "select" and
-                    ee.get_attribute("type") == "select-one" == type
-                ):
-                    print("test")
-                    Select(ee).select_by_value(value)
-                    break
-                # textarea
-                if (ee.tag_name == "textarea"):
-                    # clear content before adding value
-                    ee.click()
-                    ee.send_keys(Keys.CONTROL + "a")
-                    ee.send_keys(Keys.DELETE)
-                    #ee.clear()
-                    ee.send_keys(value)
-                    print("this is a textarea")
-                    break
-                
-                # button: 
-                if (
-                    ee.tag_name == "button" == type and
-                    ee.text.strip() == value
-                    #ee.get_attribute("type") == type and
-                    #ee.get_attribute("value") == value  # yes/no
-                ):
-                    ee.click()
-                    skip = True     # delay automation to let the page load for skip_clk()
-                    break
-                print("checked for entering input")
-        else:
-            pass
-            #print("no label match")
 
 ctrl_win.main.destroy()  # kill gui instead???
 ctrl_win.main.mainloop() # keep gui open after script runs
