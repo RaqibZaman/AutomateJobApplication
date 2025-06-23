@@ -20,14 +20,23 @@ Take dummy label data from chatGPT, paste into .txt file, save as .csv file, ope
 ...
 
 pip install pandas openpyxl
+
 pip install selenium
+
 setup github & git
+
 git init
+
 PowerShell
+
     New-Item -Path . -Name ".gitignore" -ItemType "File"
+
 git add .
+
 git commit -m "Initial commit I guess"
+
 git remote add origin "SSH link or whatever" ???
+
 git remote set-url origin https://github.com/RaqibZaman/AutomateJobApplication.git
 
 '''
