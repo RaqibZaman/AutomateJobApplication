@@ -1,7 +1,6 @@
 # AutomateJobApplication
 Automate the online job application process because I am tired of being the robot...
 # Dev Notes for V0.1
-'''
 Objective: Automate the online job application process
 Requirements:
     * store data in excel files. Maybe multiple excel files depending on the type of data-relation:
@@ -10,8 +9,7 @@ Requirements:
     * pull data from excel files into python. Store as a model. Model for each type of form maybe?
     * auto-fill forms on webpage
     * webpage traversal
-'''
-'''
+...
 ChatGPT Prompts:
 
 Overview: I will fill out a job form and I want to automate the process.
@@ -19,9 +17,8 @@ Context: I opened my excel sheet in excel. I will use column "A" and "B". "A" is
 Prompt: Generate for me a list of "A" I can use. Maybe if it is in a format I can put into a text file, save it, and open in excel that might be quicker for me.
 
 Take dummy label data from chatGPT, paste into .txt file, save as .csv file, open and save as excel file
+...
 
-'''
-'''
 pip install pandas openpyxl
 pip install selenium
 setup github & git
@@ -32,7 +29,7 @@ git add .
 git commit -m "Initial commit I guess"
 git remote add origin "SSH link or whatever" ???
 git remote set-url origin https://github.com/RaqibZaman/AutomateJobApplication.git
-'''
+
 '''
 # Dev Notes:
 * If I use self., it refers to the current instance of a class. If I use window., it refers to a var called "window" that exists outside of class.
