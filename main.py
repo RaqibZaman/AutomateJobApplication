@@ -12,79 +12,10 @@
 '''
 
 from automate import Automate
+from gui import Window
 
-# module openpyxl (installed) is used by pandas but you don't need to import it
-import logging
-import pandas as pd
 import requests
 import subprocess
-# from selenium import webdriver
-# from selenium.webdriver.chrome.options import Options
-# from selenium.webdriver.common.by import By
-# from selenium.webdriver.common.keys import Keys
-# from selenium.webdriver.support.ui import Select, WebDriverWait
-# from selenium.webdriver.support import expected_conditions as EC
-# import time
-import tkinter as tk
-
-logging.basicConfig(level=logging.ERROR)
-
-class Window:
-    def __init__(self):
-        self.main = tk.Tk()
-        self.go_signal = tk.BooleanVar(value=False)
-        self.excel_QTV = pd.read_excel("Q_T_V.xlsx")    # Col: Question, Type, Value
-        self.excel_PI = pd.read_excel("excel_files/FormLabels&Inputs.xlsx") # Personal Information: Col:: label, input_value
-        self.main.title("Auto Job Applier")
-        self.keep_alive = True
-        self.main.attributes("-topmost", True)
-
-        # put window in the center of the screen, QoL
-        win_w = 300
-        win_h = 200
-        screen_w = self.main.winfo_screenwidth()
-        screen_h = self.main.winfo_screenheight()
-        x = (screen_w // 2) - (win_w // 2)
-        y = (screen_h // 2) - (win_h // 2)
-        self.main.geometry(f"{win_w}x{win_h}+{x}+{y}")
-
-        # row 1
-        self.r1 = tk.Frame(self.main)
-        self.r1.pack(fill=tk.BOTH, expand=True)
-
-        # Stop Go buttons
-        go_btn = tk.Button(self.r1, text="Go", bg="green", fg="white", command=self.go_action)
-        go_btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=(10,5))
-
-        stop_btn = tk.Button(self.r1, text="Stop", bg="red", fg="white", command=self.stop_action)
-        stop_btn.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH, padx=5, pady=(10,5))
-
-        # row 2
-        self.r2 = tk.Frame(self.main)
-        self.r2.pack(fill=tk.BOTH, expand=True)
-
-        update_excel_btn = tk.Button(self.r2, text="Update Excel", bg="orange", fg="white", command=self.update_excel)
-        update_excel_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=(5,10))
-
-        # test excel files
-        print(self.excel_QTV.head())
-        print(self.excel_PI.head())
-
-    def go_action(self):
-        print("GO!")
-        self.go_signal.set(True)
-
-    def stop_action(self):
-        print("STOP!!!")
-        self.go_signal.set(True)
-        self.keep_alive = False
-
-    def update_excel(self):
-        print("updating excel (assuming you added change to excel file and saved)")
-        self.excel_QTV = pd.read_excel("Q_T_V.xlsx")
-        print(self.excel_QTV.tail())
-        # exceldf.to_excel("updated.xlsx", index=False)
-
 
 # requests: check if chrome window is in debug mode
 def is_chrome_debug_mode(port=9222):
