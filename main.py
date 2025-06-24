@@ -1,101 +1,30 @@
 '''
-Objective: Automate the online job application process
-Requirements:
-    * store data in excel files. Maybe multiple excel files depending on the type of data-relation:
-        label to input
-    * Like in relational databases, I should have a separate excel "table" for jobsite name and url
-    * pull data from excel files into python. Store as a model. Model for each type of form maybe?
-    * auto-fill forms on webpage
-    * webpage traversal
-'''
-'''
-ChatGPT Prompts:
 
-Overview: I will fill out a job form and I want to automate the process.
-Context: I opened my excel sheet in excel. I will use column "A" and "B". "A" is like the label, and "B" is the value that I will put into the input element of the job form. 
-Prompt: Generate for me a list of "A" I can use. Maybe if it is in a format I can put into a text file, save it, and open in excel that might be quicker for me.
-
-Take dummy label data from chatGPT, paste into .txt file, save as .csv file, open and save as excel file
-
+* In case Selenium fails me, remember that it can use jQuery to find the right element e.g.
+    driver.execute_script("$('#username').val('FirstNameTxt');")
+* I need to make sure that there is a 1 to 1 relationship to interactable web elements and automated action
+* I could map the label matches, so I could use that to limit the search range of vis_e_lst
+*
+* Next Steps:
+* I should wrap the automation as one class, perhaps?
+* Basically I want to be able to change control flow depending on the type of page I am on
+* 
 '''
-'''
-pip install pandas openpyxl
-pip install selenium
-setup github & git
-git init
-PowerShell
-    New-Item -Path . -Name ".gitignore" -ItemType "File"
-git add .
-git commit -m "Initial commit I guess"
-git remote add origin "SSH link or whatever" ???
-git remote set-url origin https://github.com/RaqibZaman/AutomateJobApplication.git
-'''
-'''
-Dev Notes:
-* If I use self., it refers to the current instance of a class. If I use window., it refers to a var called "window" that exists outside of class.
-* I should not use window. because it breaks if I have multiple instances of "window", for example.
-* .mainloop() starts tkinter event loop, and doesn't return until window is closed. That means I need to put this at the very end of my main script, I suppose...
-* window is a class. so if I do window(), I am referring to the class. I actually want to refer to the isntance of the class so you call the class and assign it to a variable: ctrl_w = window()
-* I'll change class window to Window for consistency...
 
-# note that browser instance must be opened by Selenium for Selenium to work on it
-# new problem: I am not logged in...
-# Let's see if I can automate logging in?
-# Looks like the simplest way is to open up chrome in debug mode and connect it with selenium
-
-# r before a string means "raw string". So \ is not treated as an escape character
-# f before a strng means "formatted string literal"
-# You can test if newly opened browser is in debug mode with this url: http://localhost:9222/json
-# the webdriver/selenium stuff can only run when chrome debugger window is open. Add check
-# In selenium webdriver, use driver.find_elements vs .find_element. The one without the s will crash the runtime if element is not found
-# use translate() to convert all upper case text to lower case test for case-insensitive text matching.
-# XPath: // means look through all elements, for tag[] the [] is ___ 
-# I can check what part of the application I am on by either Page title or URL. I'll go with URL
-# check to find "Do you consent"
-# I can pattern match the URL- it has a hierarchy where the end of the URL is more specific
-# Find all buttons & inputs. Filter by visible. They should have an order of what comes first on the page.
-# Before any automation occurs, there should be a debug/info output that tells me about the page I am on
-# driver.switch_to.window(driver.window_handles[-1])
-    # Force correct tab (for people like me who keeps chrome open while initiaing this script.)
-    # -1 refers to the last tab opened i.e. newest tab in chrome
-# look for visible element patterns, and use index to crawl back up and find associations between input and label 
-# I could associate labels with inputs,
-# Label is key... I don't want to throw away the label. Let's use tuples
-#driver.implicitly_wait(10)      # apparently I just need to call this 1 time per session... ok, let's see. For when quickly going through webpages automatically
-# Just want to wait the minimum time so time.sleep(10) isn't exactly the right solution
-
-# How to detect when page is fully loaded? requests or websocket library? So if selenium library doesn't have exactly what I am looking for, I can look at a different library
-# Also consider that when you select a radio button, the page dynamically loads in other radio button elements... are they just hidden i.e. not-visible
-# put click continue btn by url match, for those pages put ontop of keep alive loop. Break it, reloop, use webdriver wait on finding the next button. Don't execute code for checking page for web elements, need to hange on wait_variable
-# Should add error handing for selenium incase of staleness
-
-# You should check the load order of the DOM in terms of first/last. And put the expected condition (EC) as what loads close to last, I suppose.
-#wait = WebDriverWait(driver, 30)
-#wait.until(EC.)
-# map() func executes a function for each item in an iterable/list. so its map(func, iterable), takes 2 params. You don't need to add () to func in the map.
-# rem, a =+ 5 is same as a= +5, so positive int. Not what I want.
-# I tried WebDriverWait().until() for an expected condition, but it seems like I would have to individually find one for each page, otherwise I get a stale error or the like for webdriver. For the sake of simplicity, I'll use time.sleep() until I want to optimize the app later on.
-# pd.read_excel outputs a DataFrame, which is like a 2D array. Think of a list of lists. The outer list is the rows by index, the inner list is the columns by index.
-###
-# In case Selenium fails me, remember that it can use jQuery to find the right element e.g.
-# driver.execute_script("$('#username').val('FirstNameTxt');")
-###
-# I need to make sure that there is a 1 to 1 relationship to interactable web elements and automated action
-# I could map the label matches, so I could use that to limit the search range of vis_e_lst
-'''
+from automate import Automate
 
 # module openpyxl (installed) is used by pandas but you don't need to import it
 import logging
 import pandas as pd
 import requests
 import subprocess
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import Select, WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import time
+# from selenium import webdriver
+# from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.common.by import By
+# from selenium.webdriver.common.keys import Keys
+# from selenium.webdriver.support.ui import Select, WebDriverWait
+# from selenium.webdriver.support import expected_conditions as EC
+# import time
 import tkinter as tk
 
 logging.basicConfig(level=logging.ERROR)
@@ -157,8 +86,6 @@ class Window:
         # exceldf.to_excel("updated.xlsx", index=False)
 
 
-### Helper Functions ###
-
 # requests: check if chrome window is in debug mode
 def is_chrome_debug_mode(port=9222):
     try:
@@ -180,245 +107,15 @@ def launch_chrome_debug_mode():
     # need to test using os instead of subprocess. subprocess keeps closing the window
     print("Chrome Launched in Debug Mode!!!")
 
-# webdriver: Look at the webpage through the eyes of a robot
-def page_visible_info(driver):
-    print("Tab webdriver is on:", driver.title)
-    print("Page URL:", driver.current_url)
-    # Find the visible actionable UI elements of webpage
-    gui_ele = driver.find_elements(
-        By.XPATH,
-        "//input | //button | //select | //label | //textarea"
-    )
-    visible = [e for e in gui_ele if e.is_displayed()]
-
-    # debug info: honestly I need to know about what is on the page, in order to know what to do with it
-    for index, e in enumerate(visible):
-        tag = e.tag_name
-        print(f"\nTag[{index}]: {tag}")
-
-        if tag == "input":
-            type = e.get_attribute("type")
-            val = e.get_attribute("value")
-            name = e.get_attribute("name")
-            print(f"Type: {type}, Value: {val}, \nName: {name}")
-        
-        if tag == "textarea":
-            type = e.get_attribute("type")
-            val = e.get_attribute("value")
-            name = e.get_attribute("name")
-            print(f"Type: {type}, Value: {val}, \nName: {name}")
-
-        if tag == "button":
-            txt = e.text.strip()
-            print(f"Text: {txt}")
-            type = e.get_attribute("type")
-            val = e.get_attribute("value")
-            name = e.get_attribute("name")
-            print(f"Type: {type}, Value: {val}, \nName: {name}")
-
-        if tag == "label":
-            print(f"Label text: {e.text.strip()}")
-
-        if tag == "select":
-            type = e.get_attribute("type")
-            val = e.get_attribute("value")
-            name = e.get_attribute("name")
-            print(f"Type: {type}, Value: {val}, \nName: {name}")
-
-    return visible
-
-# input: list of visible elements
-# output: a list of tuples, with the label as key and list of associated elements following label as value. Consider that each label in list of visible elements as a delimiter.
-# type:: input: [visible_elements] output: [(label, [elements]),...]
-def get_label_elist_pairs(vis_elements):
-    label_elst_pairs = []
-    cur_label = None
-    ass_eles = []   # elements associated with label
-    for e in vis_elements:
-        # this hits with every instance of label. So upon next triggering, it will be a new label
-        if e.get_attribute("type") == "label":
-            # append with every instance of label except initial one
-            if cur_label is not None:
-                label_elst_pairs.append((cur_label, ass_eles))
-            # start new tuple by label
-            cur_label = e
-            ass_eles = []
-        # if next element is not a label
-        else:
-            ass_eles.append(e)
-    # for the last label, it is not yet added to associated_elements list. Add it
-    if cur_label is not None:
-        label_elst_pairs.append((cur_label, ass_eles))
-    return label_elst_pairs
-
-# webdriver: print text, class, and outerHTML of buttons
-def wbdr_print(btns):
-    for i, b in enumerate(btns):
-        text = b.text.strip()
-        btn_class = b.get_attribute("class")
-        print(f"{i}. text: '{text}' | class: '{btn_class}'")
-        #print(f"{i}. {b.get_attribute('outerHTML')}")
-
-# webdriver: skip irrelevant pages
-def skip_clk(driver):
-    try:
-        # webdriver stale head
-        btns = driver.find_elements(By.XPATH, "//button")
-        visible = [b for b in btns if b.is_displayed()]    # go through each item and apply a boolean-return function
-        print(f"{len(visible)} buttons are visible")
-        clk_keywords = ["continue", "submit", "return to job search", "apply anyway"]
-        for v in visible:
-            txt = v.text.strip().lower()
-            print(f"button text: {txt}")
-            if any(keyword in txt for keyword in clk_keywords):
-                print("clicked", v.text)
-                v.click()
-                break
-    except Exception as ex:
-        # let program keep running
-        print("too fast:", ex)
-
-# ...
-def wb_radio_click(driver):
-    # Find radio buttons
-    radios = driver.find_elements(By.XPATH, "//input[@type='radio']")
-    print(f"Found {len(radios)} radios")
-    visible = [x for x in radios if x.is_displayed()]
-    print(f"{len(visible)} are visible")
-    # Find description associated with radio buttons
-    
-    # Identify radios by the name/value
-    # click the one that is relevant
-    if visible:
-        visible[0].click()
-
-# spagetti nonsense code goes here for historic purpose
-def automate_v1(driver: webdriver, ctrl_win: Window):
-    skip = False
-    while ctrl_win.keep_alive:
-        if ctrl_win.keep_alive == False:
-            print("I'm dying!!! argh...")
-            break
-
-        if skip:
-                # Let webdriver catch up, otherwise driver.current_url uses previous url
-                time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
-        
-        just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply", "questions-module/intervention"]
-        if any(part in driver.current_url for part in just_clk_part):
-            skip_clk(driver)
-            skip = True
-            continue
-        else:
-            skip = False
-            print("No URL match")
-        
-        ctrl_win.main.wait_variable(ctrl_win.go_signal)    # wait_variable checks variable modified not value
-        print("continue auto filling forms")
-
-        driver.switch_to.window(driver.window_handles[-1])  # Focus on lasted tab (debugged)
-        #print(driver.window_handles)
-
-        # A label may follow a label, and then the relevant input. So filtering by label doesn't always work
-        vis_e_lst = page_visible_info(driver)    # reads last window in focus, so must follow .switch_to
-        vis_len = len(vis_e_lst)    
-        for idx, e in enumerate(vis_e_lst):
-            # 1. load information into excel_QTV: Question/prompt, type, value
-            # 2. check if Questions column of dataframe matches WebElement label text
-
-            e_txt = e.text.strip().lower()
-            # element tag_names in page_visible_info(): input, button, label, select
-                # I have a current index of vis_e_lst, check if its an input.
-                # If not, check next element in vis_e_lst. Up to 2
-                # don't go outside of list, range starts at 0. range(2) = 0, 1
-            a_match = ctrl_win.excel_QTV[ctrl_win.excel_QTV.iloc[:,0].apply(
-                lambda quest: str(quest).lower() in e_txt
-            )]
-
-            if not a_match.empty:
-                print("It's a match!")
-                # .iloc[row, col]
-                type = str(a_match.iloc[0,1]).strip().lower()
-                value = str(a_match.iloc[0,2]).strip().lower()
-
-                for i in range(9):
-                    if idx + i >= vis_len:
-                        print("out of vis_len range")
-                        break
-                    
-                    ee = vis_e_lst[idx + i] # I matched the label txt, now I am going to the next input element
-                    # input
-                    if (ee.tag_name == "input"):
-                        # radio input
-                        if(ee.get_attribute("type") == "radio" == type):
-                            # indeed has val 1:yes, 0:no
-                            y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}
-                            # input value can be 1, 0, or some other text
-                            # for radio buttons that are more than 3, I need to find a way to just search directly instead of iterating through everything...
-                            # Answer: get parent element of input
-                            if (ee.get_attribute("value") == y_n_map.get(value, "") 
-                                or ee.get_attribute("value").lower() == value.lower()
-                            ):
-                                ee.click()
-                                break
-                            else:
-                                # check parent element, which should be label. Its text should indicate if input is valid
-                                parent_ee = ee.find_element(By.XPATH, "..") # .. means go up one level
-                                if parent_ee.text.strip().lower() == value:
-                                    ee.click()
-                                    break
-                        # text input
-                        if(ee.get_attribute("type") == "text" == type):
-                            # clear content before adding value
-                            ee.click()
-                            ee.send_keys(Keys.CONTROL + "a")
-                            ee.send_keys(Keys.DELETE)
-                            #ee.clear()
-                            ee.send_keys(value)
-                            break
-                    # select: select-one
-                    if (
-                        ee.tag_name == "select" and
-                        ee.get_attribute("type") == "select-one" == type
-                    ):
-                        print("test")
-                        Select(ee).select_by_value(value)
-                        break
-                    # textarea
-                    if (ee.tag_name == "textarea"):
-                        # clear content before adding value
-                        ee.click()
-                        ee.send_keys(Keys.CONTROL + "a")
-                        ee.send_keys(Keys.DELETE)
-                        #ee.clear()
-                        ee.send_keys(value)
-                        print("this is a textarea")
-                        break
-                    
-                    # button: 
-                    if (
-                        ee.tag_name == "button" == type and
-                        ee.text.strip().lower() == value
-                    ):
-                        ee.click()
-                        skip = True     # delay automation to let the page load for skip_clk()
-                        break
-                    print("checked for entering input")
-            else:
-                pass
-                #print("no label match")
 
 ### START ###
-ctrl_win = Window()
 
 if not is_chrome_debug_mode():
     launch_chrome_debug_mode()
-    
-options = Options()
-options.add_experimental_option("debuggerAddress", "localhost:9222")  # align selenium to that chrome window
-driver = webdriver.Chrome(options=options)     # launch chrome with selenium attached to it
 
-automate_v1(driver, ctrl_win)
+ctrl_win = Window()    
+autobot = Automate()
+autobot.run(ctrl_win)
 
 
 
