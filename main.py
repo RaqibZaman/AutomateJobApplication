@@ -13,7 +13,6 @@
 
 from automate import Automate
 from gui import Window
-
 import requests
 import subprocess
 
@@ -44,9 +43,9 @@ def launch_chrome_debug_mode():
 if not is_chrome_debug_mode():
     launch_chrome_debug_mode()
 
-ctrl_win = Window()    
 autobot = Automate()
-autobot.run(ctrl_win)
+ctrl_win = Window(autobot)
+ctrl_win.run()
 
 
 

@@ -1,8 +1,11 @@
+'''
+# So either I switch to last window opened or focus on current window
+# current window:: driver.switch_to.window(driver.current_window_handle)?
+# Don't want to accidently switch to other chrome tabs ? 
+'''
 # module openpyxl (installed) is used by pandas but you don't need to import it
 import pandas as pd
 import tkinter as tk
-import time
-
 # My files
 from automate import Automate
 
@@ -83,37 +86,19 @@ class Window:
                 print("I'm dying!!! argh...")
                 break
 
-            if self.skip:
-                    # Let webdriver catch up, otherwise driver.current_url uses previous url
-                    time.sleep(3)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
-            
-            just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply", "questions-module/intervention"]
-            if any(part in self.driver.current_url for part in just_clk_part):
-                self.skip_clk()
-                self.skip = True
+            if self.automate.skip():
                 continue
-            else:
-                self.skip = False
-                print("No URL match")
             
             self.main.wait_variable(self.go_signal)    # wait_variable checks variable modified not value
             print("continue auto filling forms")
 
-            self.driver.switch_to.window(self.driver.window_handles[-1])  # Focus on lasted tab (debugged)
-            #print(driver.window_handles)
+            self.automate.focus_last_win()
 
-            # A label may follow a label, and then the relevant input. So filtering by label doesn't always work
-            vis_e_lst = self.page_visible_info()    # reads last window in focus, so must follow .switch_to
+            vis_e_lst = self.automate.page_visible_info()    # reads last window in focus, so must follow .switch_to
             vis_len = len(vis_e_lst)    
+            
             for idx, e in enumerate(vis_e_lst):
-                # 1. load information into excel_QTV: Question/prompt, type, value
-                # 2. check if Questions column of dataframe matches WebElement label text
-
                 e_txt = e.text.strip().lower()
-                # element tag_names in page_visible_info(): input, button, label, select
-                    # I have a current index of vis_e_lst, check if its an input.
-                    # If not, check next element in vis_e_lst. Up to 2
-                    # don't go outside of list, range starts at 0. range(2) = 0, 1
                 a_match = self.excel_QTV[self.excel_QTV.iloc[:,0].apply(
                     lambda quest: str(quest).lower() in e_txt
                 )]
@@ -129,66 +114,22 @@ class Window:
                             break
                         
                         ee = vis_e_lst[idx + i] # I matched the label txt, now I am going to the next input element
-                        # input
-                        if (ee.tag_name == "input"):
-                            # radio input
-                            if(ee.get_attribute("type") == "radio" == type):
-                                # indeed has val 1:yes, 0:no
-                                y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}  # radio value can be 1, 0, or some other nonsense value
-                                if (ee.get_attribute("value") == y_n_map.get(value, "") 
-                                    or ee.get_attribute("value").lower() == value.lower()
-                                ):
-                                    ee.click()
+                        match ee.tag_name:
+                            case "input":
+                                if self.automate.input_handling(ee, type, value):
                                     break
-                                else:
-                                    # incase radio value is nonsense, look at its label
-                                    # check parent element, which should be label. Its text should indicate if input is valid
-                                    parent_ee = ee.find_element(By.XPATH, "..") # .. means go up one level
-                                    if parent_ee.text.strip().lower() == value:
-                                        ee.click()
-                                        break
-                            # text input
-                            if(ee.get_attribute("type") == "text" == type):
-                                # clear content before adding value
-                                ee.click()
-                                ee.send_keys(Keys.CONTROL + "a")
-                                ee.send_keys(Keys.DELETE)
-                                ee.send_keys(value)
-                                break
-                        # select: select-one
-                        if (
-                            ee.tag_name == "select" and
-                            ee.get_attribute("type") == "select-one" == type
-                        ):
-                            try:
-                                v1 = value.lower()
-                                Select(ee).select_by_value(value)
-                                break
-                            except Exception:
-                                try:
-                                    v2 = v1[0].upper() + v1[1:]
-                                    Select(ee).select_by_value(v2)
+                            case "select":
+                                if self.automate.select_handling(ee, type, value):
                                     break
-                                except Exception as ex:
-                                    print("Error in select-one", ex)
-                        # textarea
-                        if (ee.tag_name == "textarea"):
-                            # clear content before adding value
-                            ee.click()
-                            ee.send_keys(Keys.CONTROL + "a")
-                            ee.send_keys(Keys.DELETE)
-                            ee.send_keys(value)
-                            print("this is a textarea")
-                            break
-                        # button: 
-                        if (
-                            ee.tag_name == "button" == type and
-                            ee.text.strip().lower() == value
-                        ):
-                            ee.click()
-                            self.skip = True     # delay automation to let the page load for skip_clk()
-                            break
-                        #print("checked for entering input")
-                else:
-                    pass
-                    #print("no label match")    
+                            case "textarea":
+                                if self.automate.textarea_handling(ee, type, value):
+                                    break
+                            case "button":
+                                if self.automate.button_handling(ee, type, value):
+                                    break
+                            case _:
+                                pass
+
+
+
+
