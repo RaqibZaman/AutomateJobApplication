@@ -4,10 +4,13 @@
     driver.execute_script("$('#username').val('FirstNameTxt');")
 * I need to make sure that there is a 1 to 1 relationship to interactable web elements and automated action
 * I could map the label matches, so I could use that to limit the search range of vis_e_lst
-*
-* Next Steps:
 * I should wrap the automation as one class, perhaps?
 * Basically I want to be able to change control flow depending on the type of page I am on
+*
+* Next Steps/features:
+* Should add a default option for handling selectable inputs
+* handle other types of fields (fieldset)
+* fuzzy string matching
 * 
 '''
 
