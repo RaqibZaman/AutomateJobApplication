@@ -8,10 +8,10 @@
 * Basically I want to be able to change control flow depending on the type of page I am on
 *
 * Next Steps/features:
-* Should add a default option for handling selectable inputs
-* handle other types of fields (fieldset)
-* fuzzy string matching
-* Have 2 concurrent code processes running, so that if url changes and it is a skippable page, I don't have to click "Go" to continue the application process
+* [NEXT] Should add a default option for handling selectable inputs
+* [] handle other types of fields (fieldset)
+* [] fuzzy string matching
+* [] Have 2 concurrent code processes running, so that if url changes and it is a skippable page, I don't have to click "Go" to continue the application process
 * 
 '''
 

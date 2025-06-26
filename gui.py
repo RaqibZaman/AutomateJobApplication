@@ -18,7 +18,7 @@ class Window:
         self.main.attributes("-topmost", True)
         
         self.excel_QTV = pd.read_excel("Q_T_V.xlsx")    # Col: Question, Type, Value
-        self.excel_PI = pd.read_excel("excel_files/FormLabels&Inputs.xlsx") # Personal Information: Col:: label, input_value
+        self.excel_PI = pd.read_excel("excel_files/PI_QTV.xlsx") # Personal Information: same format as QTV
         
         self.go_signal = tk.BooleanVar(value=False)
         self.keep_alive = True
@@ -74,6 +74,8 @@ class Window:
         print("updating excel (assuming you added change to excel file and saved)")
         self.excel_QTV = pd.read_excel("Q_T_V.xlsx")
         print(self.excel_QTV.tail())
+        self.excel_PI = pd.read_excel("excel_files/PI_QTV.xlsx")
+        print(self.excel_PI.tail())
         # exceldf.to_excel("updated.xlsx", index=False)
 
     def view_vis_ele(self):
@@ -98,8 +100,10 @@ class Window:
             vis_len = len(vis_e_lst)    
             
             for idx, e in enumerate(vis_e_lst):
+                # combine Personal Info with generic Ques.Ty.Val panda dataframes
+                combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
                 e_txt = e.text.strip().lower()
-                a_match = self.excel_QTV[self.excel_QTV.iloc[:,0].apply(
+                a_match = combo_QTV[combo_QTV.iloc[:,0].apply(
                     lambda quest: str(quest).lower() in e_txt
                 )]
 
