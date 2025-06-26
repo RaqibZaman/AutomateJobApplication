@@ -19,7 +19,8 @@ class Window:
         
         self.excel_QTV = pd.read_excel("Q_T_V.xlsx")    # Col: Question, Type, Value
         self.excel_PI = pd.read_excel("excel_files/PI_QTV.xlsx") # Personal Information: same format as QTV
-        
+        self.combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
+
         self.go_signal = tk.BooleanVar(value=False)
         self.keep_alive = True
 
@@ -73,9 +74,8 @@ class Window:
     def update_excel(self):
         print("updating excel (assuming you added change to excel file and saved)")
         self.excel_QTV = pd.read_excel("Q_T_V.xlsx")
-        print(self.excel_QTV.tail())
         self.excel_PI = pd.read_excel("excel_files/PI_QTV.xlsx")
-        print(self.excel_PI.tail())
+        self.combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
         # exceldf.to_excel("updated.xlsx", index=False)
 
     def view_vis_ele(self):
@@ -101,9 +101,9 @@ class Window:
             
             for idx, e in enumerate(vis_e_lst):
                 # combine Personal Info with generic Ques.Ty.Val panda dataframes
-                combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
+                #combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
                 e_txt = e.text.strip().lower()
-                a_match = combo_QTV[combo_QTV.iloc[:,0].apply(
+                a_match = self.combo_QTV[self.combo_QTV.iloc[:,0].apply(
                     lambda quest: str(quest).lower() in e_txt
                 )]
 

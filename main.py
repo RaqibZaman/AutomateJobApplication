@@ -9,10 +9,10 @@
 *
 * Next Steps/features:
 * [NEXT] Should add a default option for handling selectable inputs
-* [] handle other types of fields (fieldset)
+* [] handle other types of fields (legends... how relevant? perhaps just handle checkboxes differently?)
 * [] fuzzy string matching
-* [] Have 2 concurrent code processes running, so that if url changes and it is a skippable page, I don't have to click "Go" to continue the application process
-* 
+* [] Have 2 concurrent code processes running, so that if url changes and it is a skippable page, I don't have to click "Go" to continue the application process 
+* [] Add function to write rows into excel through Window gui.
 '''
 
 from automate import Automate
