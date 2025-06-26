@@ -110,7 +110,7 @@ class Window:
                 if not a_match.empty:
                     print("It's a match!")
                     type = str(a_match.iloc[0,1]).strip().lower()
-                    value = str(a_match.iloc[0,2]).strip().lower()
+                    value = str(a_match.iloc[0,2]).strip()  # Do not lower, want to preserve casing when inserting into textbox. Do lowering at value check in the handlers
 
                     for i in range(9):
                         if idx + i >= vis_len:

@@ -106,7 +106,7 @@ class Automate:
         if(ee.get_attribute("type") == "radio" == type):
             # indeed has val 1:yes, 0:no
             y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}  # radio value can be 1, 0, or some other nonsense value
-            if (ee.get_attribute("value") == y_n_map.get(value, "") 
+            if (ee.get_attribute("value") == y_n_map.get(value.lower(), "") 
                 or ee.get_attribute("value").lower() == value.lower()
             ):
                 ee.click()
@@ -115,7 +115,7 @@ class Automate:
                 # incase radio value is nonsense, look at its label
                 # check parent element, which should be label. Its text should indicate if input is valid
                 parent_ee = ee.find_element(By.XPATH, "..") # .. means go up one level
-                if parent_ee.text.strip().lower() == value:
+                if parent_ee.text.strip().lower() == value.lower():
                     ee.click()
                     return True
         # text input
@@ -135,13 +135,14 @@ class Automate:
             print("only handling select-one type")
             return False
         if type != "select-one":
+            print("excel type: is not select-one")
             return False
         
         # Please write a better implementation that looks through the <options> to directly select the right one
         
         try:
             v1 = value.lower()
-            Select(ee).select_by_value(value)
+            Select(ee).select_by_value(v1)
             return True
         except Exception:
             try:
@@ -164,7 +165,7 @@ class Automate:
     def button_handling(self, ee, type, value):
         if type != "button":
             return False
-        if ee.text.strip().lower() == value:
+        if ee.text.strip().lower() == value.lower():
             ee.click()
             return True
 
