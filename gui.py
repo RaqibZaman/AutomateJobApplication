@@ -26,7 +26,7 @@ class Window:
 
         # put window in the center of the screen, QoL
         win_w = 350
-        win_h = 500
+        win_h = 600
         screen_w = self.main.winfo_screenwidth()
         screen_h = self.main.winfo_screenheight()
         x = (screen_w // 2) - (win_w // 2)
@@ -117,8 +117,10 @@ class Window:
         }
         self.excel_QTV = pd.concat([self.excel_QTV, pd.DataFrame([new_row])], ignore_index=True)
         self.excel_QTV.to_excel("Q_T_V.xlsx", index=False)
-        
-        # exceldf.to_excel("updated.xlsx", index=False)
+        # clean up fields
+        self.entry_Q.delete("1.0", tk.END)
+        self.val_txtbox.delete("1.0", tk.END)
+
 
     def view_vis_ele(self):
         self.automate.page_visible_info()

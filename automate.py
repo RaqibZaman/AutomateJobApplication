@@ -138,20 +138,11 @@ class Automate:
             print("excel type: is not select-one")
             return False
         
-        # Please write a better implementation that looks through the <options> to directly select the right one
-        
-        try:
-            v1 = value.lower()
-            Select(ee).select_by_value(v1)
-            return True
-        except Exception:
-            try:
-                v2 = v1[0].upper() + v1[1:]
-                Select(ee).select_by_value(v2)
-                return True
-            except Exception as ex:
-                print("Error in select-one", ex)
-                return False
+        select = Select(ee)
+        for opt in select.options:
+            if opt.text.strip().lower() == value.lower():
+                select.select_by_visible_text(opt.text)
+                break
 
     def textarea_handling(self, ee, type, value):
         if type != "text":

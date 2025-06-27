@@ -12,7 +12,6 @@
 * [] handle other types of fields (legends... how relevant? perhaps just handle checkboxes differently?)
 * [NEXT] fuzzy string matching
 * [] Have 2 concurrent code processes running, so that if url changes and it is a skippable page, I don't have to click "Go" to continue the application process 
-* [2ND NEXT] Add function to write rows into excel through Window gui.
 '''
 
 from automate import Automate
