@@ -22,7 +22,7 @@ class Automate:
     def skip(self):
         if self.skip_v:
                 # Let webdriver catch up, otherwise driver.current_url uses previous url
-                time.sleep(1)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
+                time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
         
         just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply", "questions-module/intervention", "questions-module/supporting-info"]
         if any(part in self.driver.current_url for part in just_clk_part):

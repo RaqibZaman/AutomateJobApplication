@@ -63,7 +63,7 @@ class Window:
 
         # row 4
         self.r4 = tk.Frame(self.main, bd=2, relief=tk.SOLID)
-        self.r4.pack(fill=tk.BOTH, expand=True)
+        self.r4.pack(fill=tk.BOTH, expand=True, padx="2", pady="2")
 
         tk.Label(self.r4, text="Enter Question Text").pack(anchor="w", padx="5", pady="5")
         self.entry_Q = tk.Entry(self.r4, width=30)
@@ -108,11 +108,15 @@ class Window:
     def add_excel(self):
         print("Add Excel Entry & update")
         question = self.entry_Q.get()
-        print(question)
         type = self.type_selected.get()
-        print(type)
         value = self.val_txtbox.get("1.0", tk.END).strip()
-        print(value)
+        new_row = {
+            "Question": question,
+            "Type": type,
+            "Value": value
+        }
+        self.excel_QTV = pd.concat([self.excel_QTV, pd.DataFrame([new_row])], ignore_index=True)
+        self.excel_QTV.to_excel("Q_T_V.xlsx", index=False)
         
         # exceldf.to_excel("updated.xlsx", index=False)
 
@@ -122,14 +126,13 @@ class Window:
     # spagetti nonsense code that actually works
     def run(self):
         while self.keep_alive:
-            if self.keep_alive == False:
-                print("I'm dying!!! argh...")
-                break
-
             if self.automate.skip():
                 continue
             
             self.main.wait_variable(self.go_signal)    # wait_variable checks variable modified not value
+            if self.keep_alive == False:
+                print("I'm dying!!! argh...")
+                break
             print("continue auto filling forms")
 
             self.automate.focus_last_win()
