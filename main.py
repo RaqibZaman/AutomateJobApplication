@@ -11,6 +11,7 @@
 * [] Should add a default option for handling selectable inputs
 * [] handle other types of fields (legends... how relevant? perhaps just handle checkboxes differently?)
 * [NEXT] fuzzy string matching
+* You should consider having 4 columns instead of 3 in excel: Question, Tag_Name, Type, Value... Not sure if this is a good idea...
 * [] Have 2 concurrent code processes running, so that if url changes and it is a skippable page, I don't have to click "Go" to continue the application process 
 '''
 

@@ -141,10 +141,10 @@ class Window:
 
             vis_e_lst = self.automate.page_visible_info()    # reads last window in focus, so must follow .switch_to
             vis_len = len(vis_e_lst)    
+            # Why don't I take note of the index  for each label element, and do the search from there?
             for idx, e in enumerate(vis_e_lst):
                 try:
-                    # combine Personal Info with generic Ques.Ty.Val panda dataframes
-                    #combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
+                    # The element e has to be a label for the question check- I only put label text in that part of the column
                     e_txt = e.text.strip().lower()
                     a_match = self.combo_QTV[self.combo_QTV.iloc[:,0].apply(
                         lambda quest: str(quest).lower() in e_txt
@@ -152,6 +152,8 @@ class Window:
 
                     if not a_match.empty:
                         print("It's a match!")
+                        print(e_txt)
+                        print(a_match.to_string())
                         type = str(a_match.iloc[0,1]).strip().lower()
                         value = str(a_match.iloc[0,2]).strip()  # Do not lower, want to preserve casing when inserting into textbox. Do lowering at value check in the handlers
 
