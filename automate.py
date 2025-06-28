@@ -142,7 +142,7 @@ class Automate:
         for opt in select.options:
             if opt.text.strip().lower() == value.lower():
                 select.select_by_visible_text(opt.text)
-                break
+                return True
 
     def textarea_handling(self, ee, type, value):
         if type != "text":
