@@ -34,6 +34,17 @@ class Automate:
             print("No URL match")
             return False
     
+    def get_e_depth(self, e):
+        depth = self.driver.execute_script("""
+                let d=0, ee = arguments[0];
+                while (ee.parentElement) {
+                d++;
+                ee = ee.parentElement;
+                }
+                return d;
+            """, e)
+        return depth
+    
     # webdriver: Find the visible actionable UI elements of webpage
     def page_visible_info(self):
         gui_ele = self.driver.find_elements(
@@ -44,15 +55,7 @@ class Automate:
 
         vis_ed = []     # ed sucks... very dysfunctional
         for e in visible:
-            depth = self.driver.execute_script("""
-                let d=0, ee = arguments[0];
-                while (ee.parentElement) {
-                d++;
-                ee = ee.parentElement;
-                }
-                return d;
-            """, e)
-            vis_ed.append((e, depth))
+            vis_ed.append((e, self.get_e_depth(e)))
 
         # debug info: honestly I need to know about what is on the page, in order to know what to do with it
         for index, ed in enumerate(vis_ed):
@@ -82,14 +85,55 @@ class Automate:
 
         return visible
 
-    def read_indeed(self):
-        print("Tab webdriver is on:", self.driver.title)
-        print("Page URL:", self.driver.current_url)
+    # element + depth = ed
+    def page_visible_ed(self):
         gui_ele = self.driver.find_elements(
             By.XPATH,
             "//input | //button | //select | //label | //textarea | //legend"
         )
         visible = [e for e in gui_ele if e.is_displayed()]
+
+        vis_ed = []     # ed sucks... very dysfunctional
+        for e in visible:
+            depth = self.driver.execute_script("""
+                let d=0, ee = arguments[0];
+                while (ee.parentElement) {
+                d++;
+                ee = ee.parentElement;
+                }
+                return d;
+            """, e)
+            vis_ed.append((e, depth))
+
+        
+
+        # debug info: honestly I need to know about what is on the page, in order to know what to do with it
+        for index, ed in enumerate(vis_ed):
+            tag = ed[0].tag_name
+            type = ed[0].get_attribute("type")
+            val = ed[0].get_attribute("value")
+            match tag:
+                case "input":
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
+
+                case "textarea":
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
+
+                case "button":
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
+                    print(f"Text: {ed[0].text.strip()}")
+
+                case "label":
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
+                    print(f"Text: {ed[0].text.strip()}")
+
+                case "select":
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
+
+                case "legend":
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
+
+        return visible
     
     # webdriver: skip irrelevant pages
     def skip_clk(self):
