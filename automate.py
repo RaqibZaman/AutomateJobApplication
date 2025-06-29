@@ -84,7 +84,65 @@ class Automate:
                     print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
 
         return visible
+    
+    class NodeArray:
+        def __init__(self, e):
+            self.siblings = []
+            self.newNode 
 
+        # need a function to decide whether the element is a child or sibling, and base case when siblings[] is empty
+        def add_node(self, e):
+            new_node = Automate.Node_e(e)
+            # if there are no siblings
+            if not self.siblings:
+                self.siblings.append(new_node)
+            # if there are siblings, check if node is child or sibling
+            # cases:
+            # depth is small number (higher in hierarchy)
+            # depth is equal (sibling)
+            # depth is larger
+
+            # new_node has a bigger depth, so its a child
+            elif self.siblings[-1].depth < new_node.depth:
+                self.sibling[-1].add_child(new_node)
+            # new_node has equal depth, so it is sibling
+            elif self.siblings[-1].depth == new_node.depth:
+                self.siblings.append(new_node)
+            # new_node has smaller depth, so it is a parent, weird case, I'll just not add it for now?
+            elif self.siblings[-1].depth > new_node.depth:
+                #self.sibling.append(new_node)
+                #print(f"")
+                pass
+            
+
+
+        
+    
+    class Node_e:
+        def __init__(self, e):
+            self.e = e
+            self.depth = self.get_depth(e)
+            self.children = []
+
+        def add_child(self, node):
+            self.children.append(node)
+
+        def get_depth(self, e):
+            depth = self.driver.execute_script("""
+                    let d=0, ee = arguments[0];
+                    while (ee.parentElement) {
+                    d++;
+                    ee = ee.parentElement;
+                    }
+                    return d;
+                """, e)
+            return depth
+        
+        
+
+
+        
+    
     # element + depth = ed
     def page_visible_ed(self):
         gui_ele = self.driver.find_elements(
@@ -95,17 +153,20 @@ class Automate:
 
         vis_ed = []     # ed sucks... very dysfunctional
         for e in visible:
-            depth = self.driver.execute_script("""
-                let d=0, ee = arguments[0];
-                while (ee.parentElement) {
-                d++;
-                ee = ee.parentElement;
-                }
-                return d;
-            """, e)
-            vis_ed.append((e, depth))
+            vis_ed.append((e, self.get_e_depth(e)))
+
+        # I want to start with looking for a label
+        # Once label is found, start making the array-tree
+        # So essentially those elements before the label are truncated
+        # the label with least depth goes into the array. This seems to be the first label found on DOM
+        # That means the label element e needs to associate not only depth, but also its children
+        labels = []
+        for e in visible:
+            if e.tag_name != "label" and labels:
+                continue
 
         
+        #for e in visible:
 
         # debug info: honestly I need to know about what is on the page, in order to know what to do with it
         for index, ed in enumerate(vis_ed):
