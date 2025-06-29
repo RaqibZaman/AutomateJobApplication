@@ -36,50 +36,49 @@ class Automate:
     
     # webdriver: Find the visible actionable UI elements of webpage
     def page_visible_info(self):
-        # print("Tab webdriver is on:", self.driver.title)
-        # print("Page URL:", self.driver.current_url)
         gui_ele = self.driver.find_elements(
             By.XPATH,
             "//input | //button | //select | //label | //textarea | //legend"
         )
         visible = [e for e in gui_ele if e.is_displayed()]
 
+        vis_ed = []     # ed sucks... very dysfunctional
+        for e in visible:
+            depth = self.driver.execute_script("""
+                let d=0, ee = arguments[0];
+                while (ee.parentElement) {
+                d++;
+                ee = ee.parentElement;
+                }
+                return d;
+            """, e)
+            vis_ed.append((e, depth))
+
         # debug info: honestly I need to know about what is on the page, in order to know what to do with it
-        for index, e in enumerate(visible):
-            tag = e.tag_name
+        for index, ed in enumerate(vis_ed):
+            tag = ed[0].tag_name
+            type = ed[0].get_attribute("type")
+            val = ed[0].get_attribute("value")
             match tag:
                 case "input":
-                    type = e.get_attribute("type")
-                    val = e.get_attribute("value")
-                    print(f"\nTag[{index}]: {tag}, Type: {type}, Value: {val}")
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
 
                 case "textarea":
-                    type = e.get_attribute("type")
-                    val = e.get_attribute("value")
-                    print(f"\nTag[{index}]: {tag}, Type: {type}, Value: {val}")
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
 
                 case "button":
-                    type = e.get_attribute("type")
-                    val = e.get_attribute("value")
-                    print(f"\nTag[{index}]: {tag}, Type: {type}, Value: {val}")
-                    txt = e.text.strip()
-                    print(f"Text: {txt}")
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
+                    print(f"Text: {ed[0].text.strip()}")
 
                 case "label":
-                    type = e.get_attribute("type")
-                    val = e.get_attribute("value")
-                    print(f"\nTag[{index}]: {tag}, Type: {type}, Value: {val}")
-                    print(f"Text: {e.text.strip()}")
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
+                    print(f"Text: {ed[0].text.strip()}")
 
                 case "select":
-                    type = e.get_attribute("type")
-                    val = e.get_attribute("value")
-                    print(f"\nTag[{index}]: {tag}, Type: {type}, Value: {val}")
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
 
                 case "legend":
-                    type = e.get_attribute("type")
-                    val = e.get_attribute("value")
-                    print(f"\nTag[{index}]: {tag}, Type: {type}, Value: {val}")
+                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
 
         return visible
 
