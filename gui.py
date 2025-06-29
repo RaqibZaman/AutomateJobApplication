@@ -26,18 +26,29 @@ class Window:
 
         # put window in the center of the screen, QoL
         win_w = 350
-        win_h = 600
+        win_h = 650
         screen_w = self.main.winfo_screenwidth()
         screen_h = self.main.winfo_screenheight()
         x = (screen_w // 2) - (win_w // 2)
         y = (screen_h // 2) - (win_h // 2)
         self.main.geometry(f"{win_w}x{win_h}+{x}+{y}")
 
+        # row 0
+        r0 = tk.Frame(self.main)
+        r0.pack(fill=tk.BOTH, expand=True)
+
+        tk.Label(r0, text="Current Tab").pack(anchor="w", padx="5", pady="5")
+        self.tab_text = tk.StringVar()
+        tk.Entry(r0, width=80, textvariable=self.tab_text, state="readonly").pack(anchor="w", padx="5")
+        
+        tk.Label(r0, text="Current URL").pack(anchor="w", padx="5", pady="5")
+        self.URL_text = tk.StringVar()
+        tk.Entry(r0, width=80, textvariable=self.URL_text, state="readonly").pack(anchor="w", padx="5")
+        
         # row 1
         self.r1 = tk.Frame(self.main)
         self.r1.pack(fill=tk.BOTH, expand=True)
 
-        # Stop Go buttons
         go_btn = tk.Button(self.r1, text="Go", bg="green", fg="white", command=self.go_action)
         go_btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=(10,5))
 
@@ -89,6 +100,10 @@ class Window:
         print(self.excel_QTV.head())
         print(self.excel_PI.head())
 
+    def update_tab_url(self):
+        self.tab_text.set(self.automate.driver.title)
+        self.URL_text.set(self.automate.driver.current_url)
+    
     def go_action(self):
         print("GO!")
         self.go_signal.set(True)
@@ -128,6 +143,7 @@ class Window:
     # spagetti nonsense code that actually works
     def run(self):
         while self.keep_alive:
+            self.update_tab_url()
             if self.automate.skip():
                 continue
             

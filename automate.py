@@ -36,8 +36,8 @@ class Automate:
     
     # webdriver: Find the visible actionable UI elements of webpage
     def page_visible_info(self):
-        print("Tab webdriver is on:", self.driver.title)
-        print("Page URL:", self.driver.current_url)
+        # print("Tab webdriver is on:", self.driver.title)
+        # print("Page URL:", self.driver.current_url)
         gui_ele = self.driver.find_elements(
             By.XPATH,
             "//input | //button | //select | //label | //textarea | //legend"
@@ -83,6 +83,15 @@ class Automate:
 
         return visible
 
+    def read_indeed(self):
+        print("Tab webdriver is on:", self.driver.title)
+        print("Page URL:", self.driver.current_url)
+        gui_ele = self.driver.find_elements(
+            By.XPATH,
+            "//input | //button | //select | //label | //textarea | //legend"
+        )
+        visible = [e for e in gui_ele if e.is_displayed()]
+    
     # webdriver: skip irrelevant pages
     def skip_clk(self):
         try:
