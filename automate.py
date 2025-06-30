@@ -85,116 +85,63 @@ class Automate:
 
         return visible
     
-    class NodeArray:
-        def __init__(self, e):
-            self.siblings = []
-            self.newNode 
-
-        # need a function to decide whether the element is a child or sibling, and base case when siblings[] is empty
-        def add_node(self, e):
-            new_node = Automate.Node_e(e)
-            # if there are no siblings
-            if not self.siblings:
-                self.siblings.append(new_node)
-            # if there are siblings, check if node is child or sibling
-            # cases:
-            # depth is small number (higher in hierarchy)
-            # depth is equal (sibling)
-            # depth is larger
-
-            # new_node has a bigger depth, so its a child
-            elif self.siblings[-1].depth < new_node.depth:
-                self.sibling[-1].add_child(new_node)
-            # new_node has equal depth, so it is sibling
-            elif self.siblings[-1].depth == new_node.depth:
-                self.siblings.append(new_node)
-            # new_node has smaller depth, so it is a parent, weird case, I'll just not add it for now?
-            elif self.siblings[-1].depth > new_node.depth:
-                #self.sibling.append(new_node)
-                #print(f"")
-                pass
-            
-
-
-        
-    
-    class Node_e:
-        def __init__(self, e):
-            self.e = e
-            self.depth = self.get_depth(e)
-            self.children = []
-
-        def add_child(self, node):
-            self.children.append(node)
-
-        def get_depth(self, e):
-            depth = self.driver.execute_script("""
-                    let d=0, ee = arguments[0];
-                    while (ee.parentElement) {
-                    d++;
-                    ee = ee.parentElement;
-                    }
-                    return d;
-                """, e)
-            return depth
-        
-        
-
-
-        
-    
-    # element + depth = ed
-    def page_visible_ed(self):
+    def page_visible_tree(self):
         gui_ele = self.driver.find_elements(
             By.XPATH,
             "//input | //button | //select | //label | //textarea | //legend"
         )
         visible = [e for e in gui_ele if e.is_displayed()]
 
-        vis_ed = []     # ed sucks... very dysfunctional
-        for e in visible:
-            vis_ed.append((e, self.get_e_depth(e)))
-
-        # I want to start with looking for a label
-        # Once label is found, start making the array-tree
-        # So essentially those elements before the label are truncated
-        # the label with least depth goes into the array. This seems to be the first label found on DOM
-        # That means the label element e needs to associate not only depth, but also its children
-        labels = []
-        for e in visible:
-            if e.tag_name != "label" and labels:
+        # split off the preliminary non-label elements, not relevant
+        trunc_vis = []
+        for idx, e in enumerate(visible):
+            if e.tag_name != "label":
                 continue
-
+            else:
+                trunc_vis = visible[idx:]
+                break
         
-        #for e in visible:
+        # Starting with a label element, make a list of elements of small depth, these are higher in the hierarchy.
+        # Their children are the elements inside, thus having a lower hierarchy in the DOM
+        label_trees = []
+        for e in trunc_vis:
+            new_node = Node_e(e, self.get_e_depth(e))
+            # if there are no siblings
+            if not label_trees:
+                label_trees.append(new_node)
+            # new_node has a bigger depth, so its a child
+            elif label_trees[-1].depth < new_node.depth:
+                label_trees[-1].add_child(new_node)
+            # new_node has equal depth, so it is sibling
+            elif label_trees[-1].depth == new_node.depth:
+                label_trees.append(new_node)
+            # new_node has smaller depth, so it is a parent, weird case, I'll just add it for now?
+            elif label_trees[-1].depth > new_node.depth:
+                label_trees.append(new_node)
 
         # debug info: honestly I need to know about what is on the page, in order to know what to do with it
-        for index, ed in enumerate(vis_ed):
-            tag = ed[0].tag_name
-            type = ed[0].get_attribute("type")
-            val = ed[0].get_attribute("value")
-            match tag:
-                case "input":
-                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
+        for index, t in enumerate(label_trees):
+            
+            if t.e.tag_name == "label":
+                text = ""
+                if len(t.e.text) > 60:
+                    text = t.e.text[:60] + "..."
+                else:
+                    text = t.e.text
+                print(f"{index} [{t.e.tag_name}] D: {t.depth}, txt: {text}")
+            else:
+                print(index, end=" ")
+                t.to_str()
+            # go through children of tree
+            for c in t.children:
+                if index < 10:
+                    print(end="  ")
+                else:
+                    print(end="   ")
+                c.to_str()
+            print()
 
-                case "textarea":
-                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
-
-                case "button":
-                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
-                    print(f"Text: {ed[0].text.strip()}")
-
-                case "label":
-                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
-                    print(f"Text: {ed[0].text.strip()}")
-
-                case "select":
-                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
-
-                case "legend":
-                    print(f"\nTag[{index}]: {tag}, Depth: {ed[1]}, Type: {type}, Value: {val}")
-
-        return visible
+        return label_trees
     
     # webdriver: skip irrelevant pages
     def skip_clk(self):
@@ -273,5 +220,17 @@ class Automate:
             ee.click()
             return True
 
+class Node_e:
+    def __init__(self, e, d):
+        self.e = e
+        self.depth = d
+        self.children = []
 
+    def add_child(self, node):
+        self.children.append(node)
     
+    def to_str(self):
+        tag = self.e.tag_name
+        type = self.e.get_attribute("type")
+        val = self.e.get_attribute("value")
+        print(f"[{tag}] D: {self.depth}, T: {type}, V: {val}")

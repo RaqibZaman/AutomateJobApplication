@@ -66,7 +66,7 @@ class Window:
         self.r3 = tk.Frame(self.main)
         self.r3.pack(fill=tk.BOTH, expand=True)
 
-        view_vis_ele_btn = tk.Button(self.r3, text="View Visible Elements", bg="blue", fg="white", command=self.view_vis_ele)
+        view_vis_ele_btn = tk.Button(self.r3, text="View Visible Elements", bg="blue", fg="white", command=self.view_vis_tree)
         view_vis_ele_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=(5,10))
 
         # row 4 label
@@ -118,7 +118,6 @@ class Window:
         self.excel_QTV = pd.read_excel("Q_T_V.xlsx")
         self.excel_PI = pd.read_excel("excel_files/PI_QTV.xlsx")
         self.combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
-        # exceldf.to_excel("updated.xlsx", index=False)
 
     def add_excel(self):
         print("Add Excel Entry & update")
@@ -139,6 +138,9 @@ class Window:
 
     def view_vis_ele(self):
         self.automate.page_visible_info()
+
+    def view_vis_tree(self):
+        self.automate.page_visible_tree()
     
     # spagetti nonsense code that actually works
     def run(self):
