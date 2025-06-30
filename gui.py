@@ -220,13 +220,13 @@ class Window:
                                     break
                         else:
                             self.e_match(t.e, type, value)
-                    else:
+                    elif t.children:
                         # if there is no match, it should prompt the user to enter in the missing data
                         # Should automatically pull the Question text, the tag_name, and type
                         c = t.find_IUI_child()
                         self.set_new_match(e_txt, c.tag, c.type)
                         # yay, new problems. Now I need to find the tag_name of the next interactable UI element i.e. not the label
-                        break
+                        break   # maybe retry this part of the loop? or put a pause, add info, send info, and then continue looping?
             except Exception:
                 traceback.print_exc()
 
