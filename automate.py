@@ -223,6 +223,9 @@ class Automate:
 class Node_e:
     def __init__(self, e, d):
         self.e = e
+        self.tag = self.e.tag_name
+        self.type = self.e.get_attribute("type")
+        self.value = self.e.get_attribute("value")
         self.depth = d
         self.children = []
 
@@ -230,7 +233,14 @@ class Node_e:
         self.children.append(node)
     
     def to_str(self):
-        tag = self.e.tag_name
-        type = self.e.get_attribute("type")
-        val = self.e.get_attribute("value")
-        print(f"[{tag}] D: {self.depth}, T: {type}, V: {val}")
+        # tag = self.e.tag_name
+        # type = self.e.get_attribute("type")
+        # val = self.e.get_attribute("value")
+        print(f"[{self.tag}] D: {self.depth}, T: {self.type}, V: {self.value}")
+
+    # Find an Interactive User Interface element
+    def find_IUI_child(self):
+        for c in self.children:
+            if c.tag != "label":
+                return c
+            

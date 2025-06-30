@@ -6,6 +6,7 @@
 # module openpyxl (installed) is used by pandas but you don't need to import it
 import pandas as pd
 import tkinter as tk
+import traceback
 # My files
 from automate import Automate
 
@@ -76,18 +77,31 @@ class Window:
         self.r4 = tk.Frame(self.main, bd=2, relief=tk.SOLID)
         self.r4.pack(fill=tk.BOTH, expand=True, padx="2", pady="2")
 
-        tk.Label(self.r4, text="Enter Question Text").pack(anchor="w", padx="5", pady="5")
-        self.entry_Q = tk.Entry(self.r4, width=30)
-        self.entry_Q.pack(anchor="w", padx="5", pady="5")
+            # e.text
+        tk.Label(self.r4, text="Question Text").pack(anchor="w", padx="5", pady="5")
+        self.question_txt = ""
+        self.Q_txtbox = tk.Text(self.r4, height=2, width=40)
+        self.Q_txtbox.pack(anchor="w", padx="5", pady="5")
 
+            # e.tag_name
+        tk.Label(self.r4, text="tag_name").pack(anchor="w", padx="5", pady="5")
+        self.tagname_txt = tk.StringVar()
+        tk.Entry(self.r4, width=40, textvariable=self.tagname_txt, state="readonly").pack(anchor="w", padx="5")
+        
+            # e.getattribute("type")
         tk.Label(self.r4, text="Enter Type").pack(anchor="w", padx="5", pady="5")
         self.type_opt = ["radio", "text", "select-one", "button"]
         self.type_selected = tk.StringVar(value=self.type_opt[0])
         self.type_dropdown = tk.OptionMenu(self.r4, self.type_selected, *self.type_opt)
         self.type_dropdown.pack(anchor="w", padx="5", pady="5")
 
+            # e.getattribute("type")
+        tk.Label(self.r4, text="type").pack(anchor="w", padx="5", pady="5")
+        self.type_txt = tk.StringVar()
+        tk.Entry(self.r4, width=40, textvariable=self.type_txt, state="readonly").pack(anchor="w", padx="5")
+
         tk.Label(self.r4, text="Enter Value").pack()
-        self.val_txtbox = tk.Text(self.r4, height=10, width=40)
+        self.val_txtbox = tk.Text(self.r4, height=6, width=40)
         self.val_txtbox.pack()
 
         tk.Button(self.r4, text="Add Excel Entry", bg="gold", fg="black", command=self.add_excel).pack(expand=True, fill=tk.BOTH,padx=5, pady=5)
@@ -103,6 +117,13 @@ class Window:
     def update_tab_url(self):
         self.tab_text.set(self.automate.driver.title)
         self.URL_text.set(self.automate.driver.current_url)
+
+    def set_new_match(self, question, tagname, type):
+        # I need Question text, type, maybe tag_name?, and value to enter
+        self.Q_txtbox.insert("1.0", question)
+        self.question_txt = question
+        self.type_txt.set(type)
+        self.tagname_txt.set(tagname)
     
     def go_action(self):
         print("GO!")
@@ -121,7 +142,7 @@ class Window:
 
     def add_excel(self):
         print("Add Excel Entry & update")
-        question = self.entry_Q.get()
+        question = self.Q_txtbox.get()
         type = self.type_selected.get()
         value = self.val_txtbox.get("1.0", tk.END).strip()
         new_row = {
@@ -132,7 +153,7 @@ class Window:
         self.excel_QTV = pd.concat([self.excel_QTV, pd.DataFrame([new_row])], ignore_index=True)
         self.excel_QTV.to_excel("Q_T_V.xlsx", index=False)
         # clean up fields
-        self.entry_Q.delete("1.0", tk.END)
+        self.Q_txtbox.delete("1.0", tk.END)
         self.val_txtbox.delete("1.0", tk.END)
 
 
@@ -141,11 +162,29 @@ class Window:
 
     def view_vis_tree(self):
         self.automate.page_visible_tree()
+
+    def e_match(self, e, type, value):
+        match e.tag_name:
+            case "input":
+                if self.automate.input_handling(e, type, value):
+                    return True
+            case "select":
+                if self.automate.select_handling(e, type, value):
+                    return True
+            case "textarea":
+                if self.automate.textarea_handling(e, type, value):
+                    return True
+            case "button":
+                if self.automate.button_handling(e, type, value):
+                    return True
+            case _:
+                return False
     
     # spagetti nonsense code that actually works
     def run(self):
         while self.keep_alive:
             self.update_tab_url()
+
             if self.automate.skip():
                 continue
             
@@ -157,47 +196,39 @@ class Window:
 
             self.automate.focus_last_win()
 
-            vis_e_lst = self.automate.page_visible_info()    # reads last window in focus, so must follow .switch_to
-            vis_len = len(vis_e_lst)    
+            vis_t_lst = self.automate.page_visible_tree()    # reads last window in focus, so must follow .switch_to
+            #vis_len = len(vis_e_lst)    
             # Why don't I take note of the index  for each label element, and do the search from there?
-            for idx, e in enumerate(vis_e_lst):
-                try:
+            try:
+                for t in vis_t_lst:
                     # The element e has to be a label for the question check- I only put label text in that part of the column
-                    e_txt = e.text.strip().lower()
+                    e_txt = t.e.text.strip().lower()
                     a_match = self.combo_QTV[self.combo_QTV.iloc[:,0].apply(
                         lambda quest: str(quest).lower() in e_txt
                     )]
 
-                    if not a_match.empty:
+                    ### PROBLEM HERE ### a_match can be a set of data, right now only checking the first entry
+                    if not a_match.empty:    
                         print("It's a match!")
-                        print(e_txt)
-                        print(a_match.to_string())
                         type = str(a_match.iloc[0,1]).strip().lower()
                         value = str(a_match.iloc[0,2]).strip()  # Do not lower, want to preserve casing when inserting into textbox. Do lowering at value check in the handlers
 
-                        for i in range(9):
-                            if idx + i >= vis_len:
-                                print("out of vis_len range")
-                                break
-                            
-                            ee = vis_e_lst[idx + i] # I matched the label txt, now I am going to the next input element
-                            match ee.tag_name:
-                                case "input":
-                                    if self.automate.input_handling(ee, type, value):
-                                        break
-                                case "select":
-                                    if self.automate.select_handling(ee, type, value):
-                                        break
-                                case "textarea":
-                                    if self.automate.textarea_handling(ee, type, value):
-                                        break
-                                case "button":
-                                    if self.automate.button_handling(ee, type, value):
-                                        break
-                                case _:
-                                    pass
-                except Exception:
-                    print("need to get a job...")
+                        if t.children:
+                            for c in t.children:
+                                # I matched the label txt, now I am going to the next input element
+                                if self.e_match(c.e, type, value):
+                                    break
+                        else:
+                            self.e_match(t.e, type, value)
+                    else:
+                        # if there is no match, it should prompt the user to enter in the missing data
+                        # Should automatically pull the Question text, the tag_name, and type
+                        c = t.find_IUI_child()
+                        self.set_new_match(e_txt, c.tag, c.type)
+                        # yay, new problems. Now I need to find the tag_name of the next interactable UI element i.e. not the label
+                        break
+            except Exception:
+                traceback.print_exc()
 
 
 
