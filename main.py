@@ -8,6 +8,7 @@
 * Basically I want to be able to change control flow depending on the type of page I am on
 *
 * Next Steps/features:
+* [] Need to make run function more modular, have custom optional parameters to handle the shihtml that indeed is.
 * [] Should add a default option for handling selectable inputs
 * [] handle other types of fields (legends... how relevant? perhaps just handle checkboxes differently?)
 * [NEXT] fuzzy string matching
