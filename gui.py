@@ -117,7 +117,7 @@ class Window:
         self.URL_text.set(self.automate.driver.current_url)
 
     def set_new_match(self, question, tagname, type):
-        # I need Question text, type, maybe tag_name?, and value to enter
+        self.Q_txtbox.delete("1.0", tk.END)     # reset to no text
         self.Q_txtbox.insert("1.0", question)
         self.question_txt = question
         self.type_txt.set(type)
@@ -221,14 +221,22 @@ class Window:
                     ### PROBLEM HERE ### a_match can be a set of data, right now only checking the first entry
                     if not a_match.empty:    
                         print("It's a match!")
+                        print(a_match)
                         type = str(a_match.iloc[0,1]).strip().lower()
                         value = str(a_match.iloc[0,2]).strip()  # Do not lower, want to preserve casing when inserting into textbox. Do lowering at value check in the handlers
 
                         if t.children:
+                            e_match_found = False
                             for c in t.children:
                                 # I matched the label txt, now I am going to the next input element
                                 if self.e_match(c.e, type, value):
+                                    e_match_found = True
                                     break
+                            # Nothing matched, add new excel entry
+                            if not e_match_found:
+                                c = t.find_IUI_child()
+                                self.set_new_match(e_txt, c.tag, c.type)
+                                break   # restart vis_t_lst loop
                         else:
                             self.e_match(t.e, type, value)
                     elif t.children:

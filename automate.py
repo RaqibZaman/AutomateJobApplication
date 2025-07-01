@@ -197,9 +197,9 @@ class Automate:
         if ee.get_attribute("type") != "select-one":
             print("only handling select-one type")
             return False
-        if type != "select-one":
-            print("excel type: is not select-one")
-            return False
+        # if type != "select-one":
+        #     print("excel type: is not select-one")
+        #     return False
         
         select = Select(ee)
         for opt in select.options:
@@ -208,7 +208,7 @@ class Automate:
                 return True
 
     def textarea_handling(self, ee, type, value):
-        if type != "text" or "textarea":
+        if type != "text" and "textarea":
             return False
         ee.click()  # focus?
         ee.send_keys(Keys.CONTROL + "a")
