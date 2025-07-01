@@ -89,16 +89,16 @@ class Window:
         tk.Entry(self.r4, width=40, textvariable=self.tagname_txt, state="readonly").pack(anchor="w", padx="5")
         
             # e.getattribute("type")
-        tk.Label(self.r4, text="Enter Type").pack(anchor="w", padx="5", pady="5")
-        self.type_opt = ["radio", "text", "select-one", "button"]
-        self.type_selected = tk.StringVar(value=self.type_opt[0])
-        self.type_dropdown = tk.OptionMenu(self.r4, self.type_selected, *self.type_opt)
-        self.type_dropdown.pack(anchor="w", padx="5", pady="5")
+        #tk.Label(self.r4, text="Enter Type").pack(anchor="w", padx="5", pady="5")
+        #self.type_opt = ["radio", "text", "select-one", "button"]
+        #self.type_selected = tk.StringVar(value=self.type_opt[0])
+        #self.type_dropdown = tk.OptionMenu(self.r4, self.type_selected, *self.type_opt)
+        #self.type_dropdown.pack(anchor="w", padx="5", pady="5")
 
             # e.getattribute("type")
         tk.Label(self.r4, text="type").pack(anchor="w", padx="5", pady="5")
         self.type_txt = tk.StringVar()
-        tk.Entry(self.r4, width=40, textvariable=self.type_txt, state="readonly").pack(anchor="w", padx="5")
+        tk.Entry(self.r4, width=40, textvariable=self.type_txt).pack(anchor="w", padx="5")
 
         tk.Label(self.r4, text="Enter Value").pack()
         self.val_txtbox = tk.Text(self.r4, height=6, width=40)
@@ -142,8 +142,9 @@ class Window:
 
     def add_excel(self):
         print("Add Excel Entry & update")
-        question = self.Q_txtbox.get()
-        type = self.type_selected.get()
+        question = self.Q_txtbox.get("1.0", tk.END)
+        #type = self.type_selected.get()
+        type = self.type_txt.get()
         value = self.val_txtbox.get("1.0", tk.END).strip()
         new_row = {
             "Question": question,
@@ -152,6 +153,7 @@ class Window:
         }
         self.excel_QTV = pd.concat([self.excel_QTV, pd.DataFrame([new_row])], ignore_index=True)
         self.excel_QTV.to_excel("Q_T_V.xlsx", index=False)
+        self.combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
         # clean up fields
         self.Q_txtbox.delete("1.0", tk.END)
         self.val_txtbox.delete("1.0", tk.END)
