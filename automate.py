@@ -5,6 +5,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+from datetime import datetime
 
 # Make automation class to customize automation depending on website
 class Automate:
@@ -180,6 +181,8 @@ class Automate:
                     return True
         # text input
         if(ee.get_attribute("type") == "text" == type):
+            if value == "[current date]":
+                value = datetime.today().strftime("%m/%d/%Y")
             # clear content before adding value
             ee.click()
             ee.send_keys(Keys.CONTROL + "a")
@@ -200,12 +203,12 @@ class Automate:
         
         select = Select(ee)
         for opt in select.options:
-            if opt.text.strip().lower() == value.lower():
+            if value.lower() in opt.text.strip().lower():
                 select.select_by_visible_text(opt.text)
                 return True
 
     def textarea_handling(self, ee, type, value):
-        if type != "text":
+        if type != "text" or "textarea":
             return False
         ee.click()  # focus?
         ee.send_keys(Keys.CONTROL + "a")

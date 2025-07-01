@@ -161,6 +161,8 @@ class Window:
         self.automate.page_visible_tree()
 
     def e_match(self, e, type, value):
+        if value.lower() == "nan":  # handling panda empty cell
+            return True
         match e.tag_name:
             case "input":
                 if self.automate.input_handling(e, type, value):
