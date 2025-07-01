@@ -1,7 +1,9 @@
 '''
 # So either I switch to last window opened or focus on current window
 # current window:: driver.switch_to.window(driver.current_window_handle)?
-# Don't want to accidently switch to other chrome tabs ? 
+# Don't want to accidently switch to other chrome tabs ?
+
+* Note that tkinter Text objects can pass through newline characters. I'll stick with Entry when possible.
 '''
 # module openpyxl (installed) is used by pandas but you don't need to import it
 import pandas as pd
@@ -87,13 +89,6 @@ class Window:
         tk.Label(self.r4, text="tag_name").pack(anchor="w", padx="5", pady="5")
         self.tagname_txt = tk.StringVar()
         tk.Entry(self.r4, width=40, textvariable=self.tagname_txt, state="readonly").pack(anchor="w", padx="5")
-        
-            # e.getattribute("type")
-        #tk.Label(self.r4, text="Enter Type").pack(anchor="w", padx="5", pady="5")
-        #self.type_opt = ["radio", "text", "select-one", "button"]
-        #self.type_selected = tk.StringVar(value=self.type_opt[0])
-        #self.type_dropdown = tk.OptionMenu(self.r4, self.type_selected, *self.type_opt)
-        #self.type_dropdown.pack(anchor="w", padx="5", pady="5")
 
             # e.getattribute("type")
         tk.Label(self.r4, text="type").pack(anchor="w", padx="5", pady="5")
@@ -142,9 +137,9 @@ class Window:
 
     def add_excel(self):
         print("Add Excel Entry & update")
-        question = self.Q_txtbox.get("1.0", tk.END)
+        question = self.Q_txtbox.get("1.0", tk.END).strip()
         #type = self.type_selected.get()
-        type = self.type_txt.get()
+        type = self.type_txt.get().strip()
         value = self.val_txtbox.get("1.0", tk.END).strip()
         new_row = {
             "Question": question,
