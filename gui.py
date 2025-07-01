@@ -22,7 +22,10 @@ class Window:
         
         self.excel_QTV = pd.read_excel("Q_T_V.xlsx")    # Col: Question, Type, Value
         self.excel_PI = pd.read_excel("excel_files/PI_QTV.xlsx") # Personal Information: same format as QTV
-        self.combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
+        combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
+        self.sorted_QTV = combo_QTV.sort_values(by="Question", key=lambda q: q.str.len(), ascending=False)    # Sorting improves efficiency and minimizes mis-matches. longer strings are more accurate to match vs. shorter strings
+
+
 
         self.go_signal = tk.BooleanVar(value=False)
         self.keep_alive = True
@@ -133,7 +136,8 @@ class Window:
         print("updating excel (assuming you added change to excel file and saved)")
         self.excel_QTV = pd.read_excel("Q_T_V.xlsx")
         self.excel_PI = pd.read_excel("excel_files/PI_QTV.xlsx")
-        self.combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
+        combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
+        self.sorted_QTV = combo_QTV.sort_values(by="Question", key=lambda q: q.str.len(), ascending=False)
 
     def add_excel(self):
         print("Add Excel Entry & update")
@@ -146,9 +150,17 @@ class Window:
             "Type": type,
             "Value": value
         }
+        # add new entry to df
         self.excel_QTV = pd.concat([self.excel_QTV, pd.DataFrame([new_row])], ignore_index=True)
+        # sort like an idiot
+        self.excel_QTV = self.excel_QTV.sort_values(by="Question", key=lambda q: q.str.len(), ascending=False)
+        # write to specific excel file
         self.excel_QTV.to_excel("Q_T_V.xlsx", index=False)
-        self.combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
+        # combine QTV and PI
+        combo_QTV = pd.concat([self.excel_PI, self.excel_QTV], ignore_index=True)
+        # sort again like a double idiot
+        self.sorted_QTV = combo_QTV.sort_values(by="Question", key=lambda q: q.str.len(), ascending=False)
+        
         # clean up fields
         self.Q_txtbox.delete("1.0", tk.END)
         self.val_txtbox.delete("1.0", tk.END)
@@ -202,7 +214,7 @@ class Window:
                 for t in vis_t_lst:
                     # The element e has to be a label for the question check- I only put label text in that part of the column
                     e_txt = t.e.text.strip().lower()
-                    a_match = self.combo_QTV[self.combo_QTV.iloc[:,0].apply(
+                    a_match = self.sorted_QTV[self.sorted_QTV.iloc[:,0].apply(
                         lambda quest: str(quest).lower() in e_txt
                     )]
 
