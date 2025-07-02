@@ -32,7 +32,7 @@ class Window:
 
         # put window in the center of the screen, QoL
         win_w = 350
-        win_h = 650
+        win_h = 670
         screen_w = self.main.winfo_screenwidth()
         screen_h = self.main.winfo_screenheight()
         x = (screen_w // 2) - (win_w // 2)
@@ -66,43 +66,50 @@ class Window:
         self.r2.pack(fill=tk.BOTH, expand=True)
 
         update_excel_btn = tk.Button(self.r2, text="Update Excel", bg="orange", fg="white", command=self.update_excel)
-        update_excel_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=(5,5))
+        update_excel_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
 
         # row 3
         self.r3 = tk.Frame(self.main)
         self.r3.pack(fill=tk.BOTH, expand=True)
 
         view_vis_ele_btn = tk.Button(self.r3, text="View Visible Elements", bg="blue", fg="white", command=self.view_vis_tree)
-        view_vis_ele_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=(5,10))
-
-        # row 4 label
-        tk.Label(self.main, text="Add Excel Entry").pack()
+        view_vis_ele_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
 
         # row 4
-        self.r4 = tk.Frame(self.main, bd=2, relief=tk.SOLID)
-        self.r4.pack(fill=tk.BOTH, expand=True, padx="2", pady="2")
+        self.r4 = tk.Frame(self.main)
+        self.r4.pack(fill=tk.BOTH, expand=True)
+        # toggle custom debug
+        self.debug_mode = False
+        self.debug_btn = tk.Button(self.r4, text="Debug OFF", bg="green", fg="red", command=self.debug_toggle)
+        self.debug_btn.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
+
+        # row 5 label
+        tk.Label(self.main, text="Add Excel Entry").pack()
+        # row 5
+        self.r5 = tk.Frame(self.main, bd=2, relief=tk.SOLID)
+        self.r5.pack(fill=tk.BOTH, expand=True, padx="2", pady="2")
 
             # e.text
-        tk.Label(self.r4, text="Question Text").pack(anchor="w", padx="5", pady="5")
+        tk.Label(self.r5, text="Question Text").pack(anchor="w", padx="5", pady="5")
         self.question_txt = ""
-        self.Q_txtbox = tk.Text(self.r4, height=3, width=40)
+        self.Q_txtbox = tk.Text(self.r5, height=3, width=40)
         self.Q_txtbox.pack(anchor="w", padx="5", pady="5")
 
             # e.tag_name
-        tk.Label(self.r4, text="tag_name").pack(anchor="w", padx="5", pady="5")
+        tk.Label(self.r5, text="tag_name").pack(anchor="w", padx="5", pady="5")
         self.tagname_txt = tk.StringVar()
-        tk.Entry(self.r4, width=40, textvariable=self.tagname_txt, state="readonly").pack(anchor="w", padx="5")
+        tk.Entry(self.r5, width=40, textvariable=self.tagname_txt, state="readonly").pack(anchor="w", padx="5")
 
             # e.getattribute("type")
-        tk.Label(self.r4, text="type").pack(anchor="w", padx="5", pady="5")
+        tk.Label(self.r5, text="type").pack(anchor="w", padx="5", pady="5")
         self.type_txt = tk.StringVar()
-        tk.Entry(self.r4, width=40, textvariable=self.type_txt).pack(anchor="w", padx="5")
+        tk.Entry(self.r5, width=40, textvariable=self.type_txt).pack(anchor="w", padx="5")
 
-        tk.Label(self.r4, text="Enter Value").pack()
-        self.val_txtbox = tk.Text(self.r4, height=6, width=40)
+        tk.Label(self.r5, text="Enter Value").pack()
+        self.val_txtbox = tk.Text(self.r5, height=6, width=40)
         self.val_txtbox.pack()
 
-        tk.Button(self.r4, text="Add Excel Entry", bg="gold", fg="black", command=self.add_excel).pack(expand=True, fill=tk.BOTH,padx=5, pady=5)
+        tk.Button(self.r5, text="Add Excel Entry", bg="gold", fg="black", command=self.add_excel).pack(expand=True, fill=tk.BOTH,padx=5, pady=5)
 
 
         # need 3 field to enter information (Question, Type, Value)
@@ -111,6 +118,15 @@ class Window:
         # test excel files
         print(self.excel_QTV.head())
         print(self.excel_PI.head())
+
+    def debug_toggle(self):
+        if self.debug_mode == False:
+            self.debug_btn.config(text="Debug ON", bg="red", fg="green")
+            self.debug_mode = True
+        else:
+            self.debug_btn.config(text="Debug OFF", bg="green", fg="red")
+            self.debug_mode = False
+
 
     def update_tab_url(self):
         self.tab_text.set(self.automate.driver.title)
@@ -240,7 +256,8 @@ class Window:
                             if not e_match_found:
                                 c = t.find_IUI_child()
                                 self.set_new_match(e_txt, c.tag, c.type)
-                                #break   # restart vis_t_lst loop
+                                if self.debug_mode:
+                                    break   # restart vis_t_lst loop
                         else:
                             self.e_match(t.e, type, value)
                     elif t.children:

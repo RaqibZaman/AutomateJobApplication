@@ -158,6 +158,7 @@ class Automate:
                 print(f"button text: {txt}")
                 if any(keyword in txt for keyword in clk_keywords):
                     print("clicked", v.text)
+                    time.sleep(1)       # Try to avoid bot detection!
                     v.click()
                     break
         except Exception as ex:
@@ -233,6 +234,7 @@ class Automate:
         if type != "button":
             return False
         if ee.text.strip().lower() == value.lower():
+            time.sleep(1)       # try to avoid bot detection!!!
             ee.click()
             return True
 
