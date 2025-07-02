@@ -97,11 +97,12 @@ class Automate:
         # split off the preliminary non-label elements, not relevant
         trunc_vis = []
         for idx, e in enumerate(visible):
-            if e.tag_name != "label":
-                continue
-            else:
-                trunc_vis = visible[idx:]
+            # need to also include the first legend or label that appears
+            if e.tag_name in ["label", "legend"]:
+                trunc_vis = visible[idx-1:]
                 break
+            else:
+                continue
         
         # Starting with a label element, make a list of elements of small depth, these are higher in the hierarchy.
         # Their children are the elements inside, thus having a lower hierarchy in the DOM
@@ -124,10 +125,10 @@ class Automate:
         # debug info: honestly I need to know about what is on the page, in order to know what to do with it
         for index, t in enumerate(label_trees):
             
-            if t.e.tag_name == "label":
+            if t.e.tag_name in ["label", "legend"]:
                 text = ""
-                if len(t.e.text) > 60:
-                    text = t.e.text[:60] + "..."
+                if len(t.e.text) > 70:
+                    text = t.e.text[:70] + "..."
                 else:
                     text = t.e.text
                 print(f"{index} [{t.e.tag_name}] D: {t.depth}, txt: {text}")
