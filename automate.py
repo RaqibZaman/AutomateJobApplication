@@ -5,6 +5,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import pyperclip
 from datetime import datetime
 
 # Make automation class to customize automation depending on website
@@ -176,7 +177,8 @@ class Automate:
                 # incase radio value is nonsense, look at its label
                 # check parent element, which should be label. Its text should indicate if input is valid
                 parent_ee = ee.find_element(By.XPATH, "..") # .. means go up one level
-                if parent_ee.text.strip().lower() == value.lower():
+                #if parent_ee.text.strip().lower() == value.lower():
+                if value.lower() in parent_ee.text.strip().lower():
                     ee.click()
                     return True
         # text input
@@ -208,12 +210,23 @@ class Automate:
                 return True
 
     def textarea_handling(self, ee, type, value):
-        if type != "text" and "textarea":
+        if type != "text" and type != "textarea":
             return False
         ee.click()  # focus?
         ee.send_keys(Keys.CONTROL + "a")
         ee.send_keys(Keys.DELETE)   # clear content before adding value
-        ee.send_keys(value)
+        
+        pyperclip.copy(value)
+        ee.click()
+        ee.send_keys(Keys.CONTROL, 'v')
+        
+        # not working for long strings????
+        #ee.send_keys(value)
+        # Opt 2 incase
+        # for line in value.split('\n'):
+        #     ee.send_keys(line)
+        #     ee.send_keys(Keys.SHIFT, Keys.ENTER)
+
         return True
     
     def button_handling(self, ee, type, value):

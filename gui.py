@@ -85,7 +85,7 @@ class Window:
             # e.text
         tk.Label(self.r4, text="Question Text").pack(anchor="w", padx="5", pady="5")
         self.question_txt = ""
-        self.Q_txtbox = tk.Text(self.r4, height=2, width=40)
+        self.Q_txtbox = tk.Text(self.r4, height=3, width=40)
         self.Q_txtbox.pack(anchor="w", padx="5", pady="5")
 
             # e.tag_name
@@ -145,6 +145,10 @@ class Window:
         #type = self.type_selected.get()
         type = self.type_txt.get().strip()
         value = self.val_txtbox.get("1.0", tk.END).strip()
+        if "\n" in question:
+            print("Warning, there is a newline in Question Text. Aborting Write...")
+            # so another option to returning is to strip all newlines... or fuzzy match
+            return
         new_row = {
             "Question": question,
             "Type": type,
@@ -221,7 +225,7 @@ class Window:
                     ### PROBLEM HERE ### a_match can be a set of data, right now only checking the first entry
                     if not a_match.empty:    
                         print("It's a match!")
-                        print(a_match)
+                        print(a_match.to_string())
                         type = str(a_match.iloc[0,1]).strip().lower()
                         value = str(a_match.iloc[0,2]).strip()  # Do not lower, want to preserve casing when inserting into textbox. Do lowering at value check in the handlers
 
@@ -236,7 +240,7 @@ class Window:
                             if not e_match_found:
                                 c = t.find_IUI_child()
                                 self.set_new_match(e_txt, c.tag, c.type)
-                                break   # restart vis_t_lst loop
+                                #break   # restart vis_t_lst loop
                         else:
                             self.e_match(t.e, type, value)
                     elif t.children:
