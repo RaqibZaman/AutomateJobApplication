@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.remote.webelement import WebElement
 import time
 import pyperclip
 from datetime import datetime
@@ -107,6 +108,8 @@ class Automate:
         
         # Starting with a label element, make a list of elements of small depth, these are higher in the hierarchy.
         # Their children are the elements inside, thus having a lower hierarchy in the DOM
+        test = e_tree_builder(trunc_vis)
+        
         label_trees = []
         for e in trunc_vis:
             new_node = Node_e(e, self.get_e_depth(e))
@@ -240,14 +243,51 @@ class Automate:
             ee.click()
             return True
 
+    # I was wondering if I wanted to build a tree class, and I remind myself: you build a class when you want to maintain a state tied to an object. I just want to build a tree for now, so perhaps its not needed atm.
+    def e_tree_builder(self, e_list: list):
+        # first element is parent, return this at the end
+        # pointer to current node
+        parent_node: Node_e = None
+        pointer: Node_e = None
+        
+        for e in e_list:
+            new_node = Node_e(e, self.get_e_depth(e))
+            
+            # if first node
+            if not parent_node:
+                parent_node = new_node
+                pointer = parent_node
+
+            # right child is filled with higher depth
+            # if another subsequent node is given with higher depth, move pointer to right child and fill
+            elif (pointer.depth < new_node.depth):
+                if (pointer.right_c == None):
+                    pointer.right_c = new_node
+                else:
+                    pointer = pointer.right_c
+                    pointer.right_c = new_node
+
+            # left child is filled with lower or equal depth
+            # if another subsequent node is given with lower or equal depth, move pointer to left child and fill
+            elif(pointer.depth >= new_node.depth):
+                if (pointer.left_c == None):
+                    pointer.left_c = new_node
+                else:
+                    pointer = pointer.left_c
+                    pointer.left_c = new_node
+
+        return parent_node
+
 class Node_e:
-    def __init__(self, e, d):
+    def __init__(self, e: WebElement, d: int):
         self.e = e
         self.tag = self.e.tag_name
         self.type = self.e.get_attribute("type")
         self.value = self.e.get_attribute("value")
         self.text = e.text.strip()
         self.depth = d
+        self.left_c: Node_e = None
+        self.right_c: Node_e = None
         self.children = []
 
     def add_child(self, node):
@@ -266,4 +306,3 @@ class Node_e:
         for c in self.children:
             if c.tag != "label":
                 return c
-            
