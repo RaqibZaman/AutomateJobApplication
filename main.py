@@ -1,4 +1,17 @@
 '''
+Being detected a bot is annoying. In Chrome Dev Tools console, you can check if you show yourself
+as a bot. Just paste this in:
+
+Object.keys(window).filter(k =>
+    k.toLowerCase().includes("cdc") ||
+    k.toLowerCase().includes("wdc") ||
+    k.toLowerCase().includes("selenium") ||
+    k.toLowerCase().includes("webdriver")
+)
+
+This is also a good testing website: https://bot.sannysoft.com/
+
+You'll see that it started with 'cdc', which tells the website that you are a bot...
 
 * In case Selenium fails me, remember that it can use jQuery to find the right element e.g.
     driver.execute_script("$('#username').val('FirstNameTxt');")
@@ -36,7 +49,10 @@ def is_chrome_debug_mode(port=9222):
 def launch_chrome_debug_mode():
     chrome_path = r'"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"'
     user_data_dir = r"D:\chrome-dev-profile"
+    hide_bot = r"--disable-blink-features=AutomationControlled"
     url = "https://www.indeed.com"
+    #url = "https://www.google.com"
+    
     command = f'{chrome_path} --remote-debugging-port=9222 --user-data-dir="{user_data_dir}" {url}'
     subprocess.Popen(command, shell=True)   # start chrome in debug mode
     # need to test using os instead of subprocess. subprocess keeps closing the window

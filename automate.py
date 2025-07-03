@@ -24,7 +24,8 @@ class Automate:
     def skip(self):
         if self.skip_v:
                 # Let webdriver catch up, otherwise driver.current_url uses previous url
-                time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
+                # also if you go to fast it might trigger anti-bot nonsense...
+                time.sleep(3)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
         
         just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply", "questions-module/intervention", "questions-module/supporting-info"]
         if any(part in self.driver.current_url for part in just_clk_part):
@@ -99,7 +100,7 @@ class Automate:
         for idx, e in enumerate(visible):
             # need to also include the first legend or label that appears
             if e.tag_name in ["label", "legend"]:
-                trunc_vis = visible[idx-1:]
+                trunc_vis = visible[idx:]
                 break
             else:
                 continue
@@ -159,7 +160,7 @@ class Automate:
                 print(f"button text: {txt}")
                 if any(keyword in txt for keyword in clk_keywords):
                     print("clicked", v.text)
-                    time.sleep(1)       # Try to avoid bot detection!
+                    #time.sleep(1)       # Try to avoid bot detection!
                     v.click()
                     break
         except Exception as ex:
@@ -235,7 +236,7 @@ class Automate:
         if type != "button":
             return False
         if ee.text.strip().lower() == value.lower():
-            time.sleep(1)       # try to avoid bot detection!!!
+            #time.sleep(1)       # try to avoid bot detection!!!
             ee.click()
             return True
 
@@ -245,6 +246,7 @@ class Node_e:
         self.tag = self.e.tag_name
         self.type = self.e.get_attribute("type")
         self.value = self.e.get_attribute("value")
+        self.text = e.text.strip()
         self.depth = d
         self.children = []
 
@@ -252,10 +254,12 @@ class Node_e:
         self.children.append(node)
     
     def to_str(self):
-        # tag = self.e.tag_name
-        # type = self.e.get_attribute("type")
-        # val = self.e.get_attribute("value")
-        print(f"[{self.tag}] D: {self.depth}, T: {self.type}, V: {self.value}")
+        text = ""
+        if len(self.text) > 60:
+            text = self.text[:60] + "..."
+        else:
+            text = self.text
+        print(f"[{self.tag}] D:{self.depth}, Ty:{self.type}, Tx: {self.text}")
 
     # Find an Interactive User Interface element
     def find_IUI_child(self):
