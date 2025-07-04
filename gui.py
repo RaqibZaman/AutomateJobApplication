@@ -39,7 +39,7 @@ class Window:
         y = (screen_h // 2) - (win_h // 2)
         self.main.geometry(f"{win_w}x{win_h}+{x}+{y}")
 
-        # row 0
+        # row 0         -- Cur Tab/url
         r0 = tk.Frame(self.main)
         r0.pack(fill=tk.BOTH, expand=True)
 
@@ -51,7 +51,7 @@ class Window:
         self.URL_text = tk.StringVar()
         tk.Entry(r0, width=80, textvariable=self.URL_text, state="readonly").pack(anchor="w", padx="5")
         
-        # row 1
+        # row 1         -- GO STOP
         self.r1 = tk.Frame(self.main)
         self.r1.pack(fill=tk.BOTH, expand=True)
 
@@ -61,21 +61,28 @@ class Window:
         stop_btn = tk.Button(self.r1, text="Stop", bg="red", fg="white", command=self.stop_action)
         stop_btn.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH, padx=5, pady=(10,5))
 
-        # row 2
+        # row 2         -- Update Excel Manual Edit
         self.r2 = tk.Frame(self.main)
         self.r2.pack(fill=tk.BOTH, expand=True)
 
         update_excel_btn = tk.Button(self.r2, text="Update Excel", bg="orange", fg="white", command=self.update_excel)
         update_excel_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
 
-        # row 3
+        # row 3         -- Print Visible 
         self.r3 = tk.Frame(self.main)
         self.r3.pack(fill=tk.BOTH, expand=True)
 
-        view_vis_ele_btn = tk.Button(self.r3, text="View Visible Elements", bg="blue", fg="white", command=self.view_vis_tree)
+        view_vis_ele_btn = tk.Button(self.r3, text="View Element List", bg="blue", fg="white", command=self.view_vis_node_arr)
         view_vis_ele_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
 
-        # row 4
+        # row 3_a         -- Print Visible 
+        self.r3_a = tk.Frame(self.main)
+        self.r3_a.pack(fill=tk.BOTH, expand=True)
+
+        view_vis_ele_btn = tk.Button(self.r3_a, text="View Element Tree", bg="dodger blue", fg="white", command=self.view_vis_tree)
+        view_vis_ele_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
+
+        # row 4         -- debug toggle
         self.r4 = tk.Frame(self.main)
         self.r4.pack(fill=tk.BOTH, expand=True)
         # toggle custom debug
@@ -83,9 +90,8 @@ class Window:
         self.debug_btn = tk.Button(self.r4, text="Debug OFF", bg="green", fg="red", command=self.debug_toggle)
         self.debug_btn.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
 
-        # row 5 label
         tk.Label(self.main, text="Add Excel Entry").pack()
-        # row 5
+        # row 5         -- Add Excel Entry
         self.r5 = tk.Frame(self.main, bd=2, relief=tk.SOLID)
         self.r5.pack(fill=tk.BOTH, expand=True, padx="2", pady="2")
 
@@ -111,9 +117,6 @@ class Window:
 
         tk.Button(self.r5, text="Add Excel Entry", bg="gold", fg="black", command=self.add_excel).pack(expand=True, fill=tk.BOTH,padx=5, pady=5)
 
-
-        # need 3 field to enter information (Question, Type, Value)
-        # And submit button.
 
         # test excel files
         print(self.excel_QTV.head())
@@ -187,9 +190,15 @@ class Window:
 
 
     def view_vis_ele(self):
+        self.automate.focus_last_win()
         self.automate.page_visible_info()
 
+    def view_vis_node_arr(self):
+        self.automate.focus_last_win()
+        self.automate.page_vis_node_arr()
+
     def view_vis_tree(self):
+        self.automate.focus_last_win()
         self.automate.page_visible_tree()
 
     def e_match(self, e, type, value):
@@ -227,7 +236,7 @@ class Window:
 
             self.automate.focus_last_win()
 
-            vis_t_lst = self.automate.page_visible_tree()    # reads last window in focus, so must follow .switch_to
+            vis_t_lst = self.automate.page_vis_node_arr()    # reads last window in focus, so must follow .switch_to
             #vis_len = len(vis_e_lst)    
             # Why don't I take note of the index  for each label element, and do the search from there?
             try:

@@ -89,7 +89,25 @@ class Automate:
 
         return visible
     
-    def page_visible_tree(self):
+    def relevant_visible_elements(self):
+        gui_ele = self.driver.find_elements(
+            By.XPATH,
+            "//input | //button | //select | //label | //textarea | //legend"
+        )
+        visible = [e for e in gui_ele if e.is_displayed()]
+
+        # split off the preliminary non-label elements, not relevant
+        trunc_vis = []
+        for idx, e in enumerate(visible):
+            # need to also include the first legend or label that appears
+            if e.tag_name in ["label", "legend"]:
+                trunc_vis = visible[idx:]
+                break
+            else:
+                continue
+        return trunc_vis
+    
+    def page_vis_node_arr(self):
         gui_ele = self.driver.find_elements(
             By.XPATH,
             "//input | //button | //select | //label | //textarea | //legend"
@@ -108,7 +126,6 @@ class Automate:
         
         # Starting with a label element, make a list of elements of small depth, these are higher in the hierarchy.
         # Their children are the elements inside, thus having a lower hierarchy in the DOM
-        test = e_tree_builder(trunc_vis)
         
         label_trees = []
         for e in trunc_vis:
@@ -117,25 +134,23 @@ class Automate:
             if not label_trees:
                 label_trees.append(new_node)
             # new_node has a bigger depth, so its a child
-            elif label_trees[-1].depth < new_node.depth:
+            elif label_trees[-1].DOM_depth < new_node.DOM_depth:
                 label_trees[-1].add_child(new_node)
             # new_node has equal depth, so it is sibling
-            elif label_trees[-1].depth == new_node.depth:
+            elif label_trees[-1].DOM_depth == new_node.DOM_depth:
                 label_trees.append(new_node)
             # new_node has smaller depth, so it is a parent, weird case, I'll just add it for now?
-            elif label_trees[-1].depth > new_node.depth:
+            elif label_trees[-1].DOM_depth > new_node.DOM_depth:
                 label_trees.append(new_node)
 
         # debug info: honestly I need to know about what is on the page, in order to know what to do with it
         for index, t in enumerate(label_trees):
             
             if t.e.tag_name in ["label", "legend"]:
-                text = ""
-                if len(t.e.text) > 70:
-                    text = t.e.text[:70] + "..."
-                else:
-                    text = t.e.text
-                print(f"{index} [{t.e.tag_name}] D: {t.depth}, txt: {text}")
+                text = t.e.text.replace("\n", "").strip()
+                if len(text) > 70:
+                    text = text[:70] + "..."
+                print(f"{index} [{t.e.tag_name}] D: {t.DOM_depth}, txt: {text}")
             else:
                 print(index, end=" ")
                 t.to_str()
@@ -243,6 +258,12 @@ class Automate:
             ee.click()
             return True
 
+    def page_visible_tree(self):
+        visible_elements = self.relevant_visible_elements()
+        root_node = self.e_tree_builder(visible_elements)
+        return root_node
+
+    
     # I was wondering if I wanted to build a tree class, and I remind myself: you build a class when you want to maintain a state tied to an object. I just want to build a tree for now, so perhaps its not needed atm.
     def e_tree_builder(self, e_list: list):
         # first element is parent, return this at the end
@@ -257,24 +278,32 @@ class Automate:
             if not parent_node:
                 parent_node = new_node
                 pointer = parent_node
+                pointer.update("T", 0, 0)
 
             # right child is filled with higher depth
             # if another subsequent node is given with higher depth, move pointer to right child and fill
-            elif (pointer.depth < new_node.depth):
-                if (pointer.right_c == None):
-                    pointer.right_c = new_node
+            elif (pointer.DOM_depth < new_node.DOM_depth):
+                if (pointer.right_slave == None):
+                    # new_node has +1 deeper level, and id=R
+                    new_node.update("R", pointer.tree_depth+1, pointer.right_depth+1)
+                    pointer.right_slave = new_node
                 else:
-                    pointer = pointer.right_c
-                    pointer.right_c = new_node
+                    pointer = pointer.right_slave
+                    new_node.update("R", pointer.tree_depth+1, pointer.right_depth+1)
+                    pointer.right_slave = new_node
 
             # left child is filled with lower or equal depth
             # if another subsequent node is given with lower or equal depth, move pointer to left child and fill
-            elif(pointer.depth >= new_node.depth):
-                if (pointer.left_c == None):
-                    pointer.left_c = new_node
+            elif(pointer.DOM_depth >= new_node.DOM_depth):
+                if (pointer.left_master == None):
+                    new_node.update("L", pointer.tree_depth+1, pointer.right_depth)
+                    pointer.left_master = new_node
                 else:
-                    pointer = pointer.left_c
-                    pointer.left_c = new_node
+                    pointer = pointer.left_master
+                    new_node.update("L", pointer.tree_depth+1, pointer.right_depth)
+                    pointer.left_master = new_node
+
+            new_node.to_str()
 
         return parent_node
 
@@ -285,13 +314,23 @@ class Node_e:
         self.type = self.e.get_attribute("type")
         self.value = self.e.get_attribute("value")
         self.text = e.text.strip()
-        self.depth = d
-        self.left_c: Node_e = None
-        self.right_c: Node_e = None
+        self.DOM_depth = d
+
+        self.parent: Node_e = None
+        self.left_master: Node_e = None
+        self.right_slave: Node_e = None
+        self.id = ""
+        self.tree_depth = 0
+        self.right_depth = 0
         self.children = []
 
     def add_child(self, node):
         self.children.append(node)
+
+    def update(self, id: str, tree_depth: int, right_depth: int):
+        self.id = id
+        self.tree_depth = tree_depth
+        self.right_depth = right_depth
     
     def to_str(self):
         text = ""
@@ -299,10 +338,39 @@ class Node_e:
             text = self.text[:60] + "..."
         else:
             text = self.text
-        print(f"[{self.tag}] D:{self.depth}, Ty:{self.type}, Tx: {self.text}")
+        for i in range(self.right_depth):
+            print(end="  ")
+        fixed_txt = self.text.replace("\n", "").strip()
+        print(f"[{self.id}:{self.tag}] D:{self.DOM_depth}, Ty:{self.type}, Tx: {fixed_txt}")
 
     # Find an Interactive User Interface element
     def find_IUI_child(self):
         for c in self.children:
             if c.tag != "label":
                 return c
+
+def compare_nodes(parent: Node_e, child: Node_e):
+    # right child is filled with higher depth
+    # if another subsequent node is given with higher depth, move pointer to right child and fill
+    if (parent.DOM_depth < child.DOM_depth):
+        if (parent.right_slave == None):
+            # new_node has +1 deeper level, and id=R
+            child.update("R", parent.tree_depth+1, parent.right_depth+1)
+            parent.right_slave = child
+            return parent
+        else:
+            parent = parent.right_slave
+            child.update("R", parent.tree_depth+1, parent.right_depth+1)
+            return compare_nodes(parent, child)
+
+    # left child is filled with lower or equal depth
+    # if another subsequent node is given with lower or equal depth, move pointer to left child and fill
+    elif(parent.DOM_depth >= child.DOM_depth):
+        if (parent.left_master == None):
+            child.update("L", parent.tree_depth+1, parent.right_depth)
+            parent.left_master = child
+            return parent
+        else:
+            parent = parent.left_master
+            child.update("L", parent.tree_depth+1, parent.right_depth)
+            return compare_nodes(parent, child)
