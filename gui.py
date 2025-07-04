@@ -201,15 +201,15 @@ class Window:
         self.automate.focus_last_win()
         self.automate.page_visible_tree()
 
-    def e_match(self, e, type, value):
-        if value.lower() == "nan":  # handling panda empty cell
+    def e_match(self, e, type, value, df_matches = None):
+        if value.lower() == "nan" or value == "":  # handling panda empty cell
             return True
         match e.tag_name:
             case "input":
                 if self.automate.input_handling(e, type, value):
                     return True
             case "select":
-                if self.automate.select_handling(e, type, value):
+                if self.automate.select_handling(e, type, value, df_matches):
                     return True
             case "textarea":
                 if self.automate.textarea_handling(e, type, value):
@@ -225,8 +225,9 @@ class Window:
         while self.keep_alive:
             self.update_tab_url()
 
-            if self.automate.skip():
-                continue
+            # Logic here needs to be fixed
+            # if self.automate.skip():
+            #     continue
             
             self.main.wait_variable(self.go_signal)    # wait_variable checks variable modified not value
             if self.keep_alive == False:
@@ -246,21 +247,33 @@ class Window:
                     a_match = self.sorted_QTV[self.sorted_QTV.iloc[:,0].apply(
                         lambda quest: str(quest).lower() in e_txt
                     )]
-
+                    
                     ### PROBLEM HERE ### a_match can be a set of data, right now only checking the first entry
                     if not a_match.empty:    
-                        print("It's a match!")
+                        print(f"[e_txt] {e_txt}")
+                        print("Matches first entry:")
                         print(a_match.to_string())
+                        print()
                         type = str(a_match.iloc[0,1]).strip().lower()
                         value = str(a_match.iloc[0,2]).strip()  # Do not lower, want to preserve casing when inserting into textbox. Do lowering at value check in the handlers
 
+                        if t.tag == "label" and t.text.lower() == "cover letter":
+                            self.automate.flag_cv = True
+                        
+                        # if parent t is not a fieldset or label, check itself first... button for now?
+                        if t.tag == "button":
+                            if self.e_match(t.e, type, value):
+                                break
+                        
                         if t.children:
                             e_match_found = False
+                            # parent text match, search children
                             for c in t.children:
                                 # I matched the label txt, now I am going to the next input element
-                                if self.e_match(c.e, type, value):
+                                if self.e_match(c.e, type, value, a_match):
                                     e_match_found = True
                                     break
+                            
                             # Nothing matched, add new excel entry
                             if not e_match_found:
                                 c = t.find_IUI_child()
@@ -268,7 +281,7 @@ class Window:
                                 if self.debug_mode:
                                     break   # restart vis_t_lst loop
                         else:
-                            self.e_match(t.e, type, value)
+                            self.e_match(t.e, type, value, a_match)
                     elif t.children:
                         # if there is no match, it should prompt the user to enter in the missing data
                         # Should automatically pull the Question text, the tag_name, and type

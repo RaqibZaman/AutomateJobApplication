@@ -18,8 +18,10 @@ class Automate:
         self.driver = webdriver.Chrome(options=options)     # launch chrome with selenium attached to it
         
         self.focus_last_win = lambda: self.driver.switch_to.window(self.driver.window_handles[-1])  # Focus on lasted tab (debugged)
-        self.skip_v = False
+        self.skip_v = True
 
+        # form fill action flags
+        self.flag_cv = False
 
 
     def skip(self):
@@ -100,7 +102,7 @@ class Automate:
         trunc_vis = []
         for idx, e in enumerate(visible):
             # need to also include the first legend or label that appears
-            if e.tag_name in ["label", "legend"]:
+            if e.tag_name in ["label", "legend", "fieldset"]:
                 trunc_vis = visible[idx:]
                 break
             else:
@@ -110,7 +112,8 @@ class Automate:
     def page_vis_node_arr(self):
         gui_ele = self.driver.find_elements(
             By.XPATH,
-            "//input | //button | //select | //label | //textarea | //legend"
+            #"//input | //button | //select | //label | //textarea | //legend"
+            "//input | //button | //select | //label | //textarea | //fieldset"
         )
         visible = [e for e in gui_ele if e.is_displayed()]
 
@@ -118,35 +121,41 @@ class Automate:
         trunc_vis = []
         for idx, e in enumerate(visible):
             # need to also include the first legend or label that appears
-            if e.tag_name in ["label", "legend"]:
+            if e.tag_name in ["label", "legend", "fieldset"]:
                 trunc_vis = visible[idx:]
                 break
             else:
                 continue
         
+        if not trunc_vis:
+            trunc_vis = visible
         # Starting with a label element, make a list of elements of small depth, these are higher in the hierarchy.
         # Their children are the elements inside, thus having a lower hierarchy in the DOM
         
-        label_trees = []
+        node_array: list[Node_e] = []
         for e in trunc_vis:
             new_node = Node_e(e, self.get_e_depth(e))
             # if there are no siblings
-            if not label_trees:
-                label_trees.append(new_node)
+            if not node_array:
+                node_array.append(new_node)
             # new_node has a bigger depth, so its a child
-            elif label_trees[-1].DOM_depth < new_node.DOM_depth:
-                label_trees[-1].add_child(new_node)
+            elif node_array[-1].DOM_depth < new_node.DOM_depth:
+                # an exception is if it is a fieldset
+                if new_node.tag == "fieldset":
+                    node_array.append(new_node)
+                else:
+                    node_array[-1].add_child(new_node)
             # new_node has equal depth, so it is sibling
-            elif label_trees[-1].DOM_depth == new_node.DOM_depth:
-                label_trees.append(new_node)
+            elif node_array[-1].DOM_depth == new_node.DOM_depth:
+                node_array.append(new_node)
             # new_node has smaller depth, so it is a parent, weird case, I'll just add it for now?
-            elif label_trees[-1].DOM_depth > new_node.DOM_depth:
-                label_trees.append(new_node)
+            elif node_array[-1].DOM_depth > new_node.DOM_depth:
+                node_array.append(new_node)
 
         # debug info: honestly I need to know about what is on the page, in order to know what to do with it
-        for index, t in enumerate(label_trees):
+        for index, t in enumerate(node_array):
             
-            if t.e.tag_name in ["label", "legend"]:
+            if t.e.tag_name in ["label", "legend", "fieldset"]:
                 text = t.e.text.replace("\n", "").strip()
                 if len(text) > 70:
                     text = text[:70] + "..."
@@ -163,7 +172,7 @@ class Automate:
                 c.to_str()
             print()
 
-        return label_trees
+        return node_array
     
     # webdriver: skip irrelevant pages
     def skip_clk(self):
@@ -216,23 +225,31 @@ class Automate:
             return False
 
     # currently only for handling select-one type
-    def select_handling(self, ee, type, value):
+    def select_handling(self, ee, type, value, df_matches):
         if ee.get_attribute("type") != "select-one":
             print("only handling select-one type")
             return False
-        # if type != "select-one":
-        #     print("excel type: is not select-one")
-        #     return False
         
         select = Select(ee)
-        for opt in select.options:
-            if value.lower() in opt.text.strip().lower():
-                select.select_by_visible_text(opt.text)
-                return True
+        # Loop though dataframe
+        for i in range(len(df_matches)):
+            ty = str(df_matches.iloc[i,1]).strip().lower()
+            val = str(df_matches.iloc[i,2]).strip().lower()
+            if ty != "select-one":
+                continue
+
+            for opt in select.options:
+                opt_txt = opt.text.strip().lower()
+                if val in opt_txt:
+                    select.select_by_visible_text(opt.text)
+                    return True
+        return False
+
 
     def textarea_handling(self, ee, type, value):
         if type != "text" and type != "textarea":
-            return False
+            if type != "[cover letter]":      # you can also add the cover letter flag check if you need.
+                return False
         ee.click()  # focus?
         ee.send_keys(Keys.CONTROL + "a")
         ee.send_keys(Keys.DELETE)   # clear content before adding value
@@ -251,12 +268,13 @@ class Automate:
         return True
     
     def button_handling(self, ee, type, value):
-        if type != "button":
+        if type != ee.get_attribute("type"):
             return False
         if ee.text.strip().lower() == value.lower():
-            #time.sleep(1)       # try to avoid bot detection!!!
             ee.click()
             return True
+        else:
+            return False
 
     def page_visible_tree(self):
         visible_elements = self.relevant_visible_elements()
@@ -279,40 +297,19 @@ class Automate:
                 parent_node = new_node
                 pointer = parent_node
                 pointer.update("T", 0, 0)
-
-            # right child is filled with higher depth
-            # if another subsequent node is given with higher depth, move pointer to right child and fill
-            elif (pointer.DOM_depth < new_node.DOM_depth):
-                if (pointer.right_slave == None):
-                    # new_node has +1 deeper level, and id=R
-                    new_node.update("R", pointer.tree_depth+1, pointer.right_depth+1)
-                    pointer.right_slave = new_node
-                else:
-                    pointer = pointer.right_slave
-                    new_node.update("R", pointer.tree_depth+1, pointer.right_depth+1)
-                    pointer.right_slave = new_node
-
-            # left child is filled with lower or equal depth
-            # if another subsequent node is given with lower or equal depth, move pointer to left child and fill
-            elif(pointer.DOM_depth >= new_node.DOM_depth):
-                if (pointer.left_master == None):
-                    new_node.update("L", pointer.tree_depth+1, pointer.right_depth)
-                    pointer.left_master = new_node
-                else:
-                    pointer = pointer.left_master
-                    new_node.update("L", pointer.tree_depth+1, pointer.right_depth)
-                    pointer.left_master = new_node
-
-            new_node.to_str()
-
+                pointer.to_str()
+            else:
+                pointer = compare_nodes(pointer, new_node)
+        
+        print()
         return parent_node
 
 class Node_e:
     def __init__(self, e: WebElement, d: int):
         self.e = e
-        self.tag = self.e.tag_name
-        self.type = self.e.get_attribute("type")
-        self.value = self.e.get_attribute("value")
+        self.tag = e.tag_name
+        self.type = e.get_attribute("type")
+        self.value = e.get_attribute("value")
         self.text = e.text.strip()
         self.DOM_depth = d
 
@@ -333,15 +330,15 @@ class Node_e:
         self.right_depth = right_depth
     
     def to_str(self):
-        text = ""
-        if len(self.text) > 60:
-            text = self.text[:60] + "..."
-        else:
-            text = self.text
+        text = self.text.replace("\n", "").strip()
+        if len(text) > 60:
+            text = text[:60] + "..."
         for i in range(self.right_depth):
             print(end="  ")
-        fixed_txt = self.text.replace("\n", "").strip()
-        print(f"[{self.id}:{self.tag}] D:{self.DOM_depth}, Ty:{self.type}, Tx: {fixed_txt}")
+        if (self.id == ""):     # print depending on which function used.
+            print(f"[{self.tag}] D:{self.DOM_depth}, Ty:{self.type}, Tx: {text}")
+        else:
+            print(f"[{self.id}:{self.tag}] D:{self.DOM_depth}, Ty:{self.type}, Tx: {text}")
 
     # Find an Interactive User Interface element
     def find_IUI_child(self):
@@ -349,7 +346,13 @@ class Node_e:
             if c.tag != "label":
                 return c
 
+# limit = 0
 def compare_nodes(parent: Node_e, child: Node_e):
+    # global limit
+    # if limit == 50:
+    #     return
+    # else:
+    #     limit += 1
     # right child is filled with higher depth
     # if another subsequent node is given with higher depth, move pointer to right child and fill
     if (parent.DOM_depth < child.DOM_depth):
@@ -357,6 +360,7 @@ def compare_nodes(parent: Node_e, child: Node_e):
             # new_node has +1 deeper level, and id=R
             child.update("R", parent.tree_depth+1, parent.right_depth+1)
             parent.right_slave = child
+            child.to_str()
             return parent
         else:
             parent = parent.right_slave
@@ -369,6 +373,7 @@ def compare_nodes(parent: Node_e, child: Node_e):
         if (parent.left_master == None):
             child.update("L", parent.tree_depth+1, parent.right_depth)
             parent.left_master = child
+            child.to_str()
             return parent
         else:
             parent = parent.left_master
