@@ -59,7 +59,7 @@ class Automate:
         )
         visible = [e for e in gui_ele if e.is_displayed()]
 
-        vis_ed = []     # ed sucks... very dysfunctional
+        vis_ed = []
         for e in visible:
             vis_ed.append((e, self.get_e_depth(e)))
 
@@ -113,7 +113,8 @@ class Automate:
         gui_ele = self.driver.find_elements(
             By.XPATH,
             #"//input | //button | //select | //label | //textarea | //legend"
-            "//input | //button | //select | //label | //textarea | //fieldset"
+            #"//input | //button | //select | //label | //textarea | //fieldset"
+            "//input | //button | //select | //label | //textarea | //fieldset | //legend"
         )
         visible = [e for e in gui_ele if e.is_displayed()]
 
@@ -141,6 +142,7 @@ class Automate:
             # new_node has a bigger depth, so its a child
             elif node_array[-1].DOM_depth < new_node.DOM_depth:
                 # an exception is if it is a fieldset
+                #if new_node.tag == "fieldset" or new_node.tag == "legend":
                 if new_node.tag == "fieldset":
                     node_array.append(new_node)
                 else:
@@ -195,9 +197,9 @@ class Automate:
             print("too fast:", ex) 
 
     def input_handling(self, ee, type, value):
+        y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}  # radio value can be 1, 0, or some other nonsense value
+        
         if(ee.get_attribute("type") == "radio" == type):
-            # indeed has val 1:yes, 0:no
-            y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}  # radio value can be 1, 0, or some other nonsense value
             if (ee.get_attribute("value") == y_n_map.get(value.lower(), "") 
                 or ee.get_attribute("value").lower() == value.lower()
             ):
@@ -229,20 +231,14 @@ class Automate:
         if ee.get_attribute("type") != "select-one":
             print("only handling select-one type")
             return False
-        
+        if type != "select-one":
+            return False
         select = Select(ee)
-        # Loop though dataframe
-        for i in range(len(df_matches)):
-            ty = str(df_matches.iloc[i,1]).strip().lower()
-            val = str(df_matches.iloc[i,2]).strip().lower()
-            if ty != "select-one":
-                continue
-
-            for opt in select.options:
-                opt_txt = opt.text.strip().lower()
-                if val in opt_txt:
-                    select.select_by_visible_text(opt.text)
-                    return True
+        for opt in select.options:
+            opt_txt = opt.text.strip().lower()
+            if value.lower() in opt_txt:
+                select.select_by_visible_text(opt.text)
+                return True
         return False
 
 

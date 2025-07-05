@@ -201,24 +201,29 @@ class Window:
         self.automate.focus_last_win()
         self.automate.page_visible_tree()
 
-    def e_match(self, e, type, value, df_matches = None):
-        if value.lower() == "nan" or value == "":  # handling panda empty cell
-            return True
-        match e.tag_name:
-            case "input":
-                if self.automate.input_handling(e, type, value):
-                    return True
-            case "select":
-                if self.automate.select_handling(e, type, value, df_matches):
-                    return True
-            case "textarea":
-                if self.automate.textarea_handling(e, type, value):
-                    return True
-            case "button":
-                if self.automate.button_handling(e, type, value):
-                    return True
-            case _:
-                return False
+    def e_match(self, e, type, value, df_matches):
+        for i in range(len(df_matches)):
+            type = str(df_matches.iloc[i,1]).strip().lower()
+            value = str(df_matches.iloc[i,2]).strip()
+            if value.lower() == "nan" or value == "":  # handling panda empty cell. This will shoot me in the foot later on
+                return True
+            match e.tag_name:
+                case "input":
+                    if self.automate.input_handling(e, type, value):
+                        return True
+                case "select":
+                    if self.automate.select_handling(e, type, value, df_matches):
+                        return True
+                case "textarea":
+                    if self.automate.textarea_handling(e, type, value):
+                        return True
+                case "button":
+                    if self.automate.button_handling(e, type, value):
+                        return True
+                case _:
+                    #return False
+                    pass
+        return False
     
     # spagetti nonsense code that actually works
     def run(self):
@@ -262,7 +267,7 @@ class Window:
                         
                         # if parent t is not a fieldset or label, check itself first... button for now?
                         if t.tag == "button":
-                            if self.e_match(t.e, type, value):
+                            if self.e_match(t.e, type, value, a_match):
                                 break
                         
                         if t.children:
@@ -287,8 +292,10 @@ class Window:
                         # Should automatically pull the Question text, the tag_name, and type
                         c = t.find_IUI_child()
                         self.set_new_match(e_txt, c.tag, c.type)
+                        if self.debug_mode:
+                            break   # restart vis_t_lst loop
                         # yay, new problems. Now I need to find the tag_name of the next interactable UI element i.e. not the label
-                        break   # maybe retry this part of the loop? or put a pause, add info, send info, and then continue looping?
+                        #break   # maybe retry this part of the loop? or put a pause, add info, send info, and then continue looping?
             except Exception:
                 traceback.print_exc()
 
