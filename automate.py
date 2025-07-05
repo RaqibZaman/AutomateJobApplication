@@ -18,7 +18,7 @@ class Automate:
         self.driver = webdriver.Chrome(options=options)     # launch chrome with selenium attached to it
         
         self.focus_last_win = lambda: self.driver.switch_to.window(self.driver.window_handles[-1])  # Focus on lasted tab (debugged)
-        self.skip_v = True
+        self.skip_v = False
 
         # form fill action flags
         self.flag_cv = False
@@ -28,7 +28,7 @@ class Automate:
         if self.skip_v:
                 # Let webdriver catch up, otherwise driver.current_url uses previous url
                 # also if you go to fast it might trigger anti-bot nonsense...
-                time.sleep(3)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
+                time.sleep(2)   # chrome dev tools > network > ~ indeed page takes about 5-7 secs to load...
         
         just_clk_part = ["form/review", "form/resume", "form/commute-check", "form/post-apply", "questions-module/intervention", "questions-module/supporting-info"]
         if any(part in self.driver.current_url for part in just_clk_part):
@@ -196,10 +196,10 @@ class Automate:
             # let program keep running
             print("too fast:", ex) 
 
-    def input_handling(self, ee, type, value):
+    def input_handling(self, ee: WebElement, type, value):
         y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}  # radio value can be 1, 0, or some other nonsense value
-        
-        if(ee.get_attribute("type") == "radio" == type):
+        ee_type = ee.get_attribute("type")
+        if(ee_type == "radio" == type):
             if (ee.get_attribute("value") == y_n_map.get(value.lower(), "") 
                 or ee.get_attribute("value").lower() == value.lower()
             ):
@@ -209,12 +209,11 @@ class Automate:
                 # incase radio value is nonsense, look at its label
                 # check parent element, which should be label. Its text should indicate if input is valid
                 parent_ee = ee.find_element(By.XPATH, "..") # .. means go up one level
-                #if parent_ee.text.strip().lower() == value.lower():
                 if value.lower() in parent_ee.text.strip().lower():
                     ee.click()
                     return True
         # text input
-        if(ee.get_attribute("type") == "text" == type):
+        elif(ee_type == "text" == type):
             if value == "[current date]":
                 value = datetime.today().strftime("%m/%d/%Y")
             # clear content before adding value
@@ -223,6 +222,12 @@ class Automate:
             ee.send_keys(Keys.DELETE)
             ee.send_keys(value)
             return True
+        elif(ee_type == "checkbox" == type):
+            parent_ee = ee.find_element(By.XPATH, "..") # .. means go up one level
+            if value.lower() in parent_ee.text.strip().lower():
+                if not ee.is_selected():
+                    ee.click()
+                    return True
         else:
             return False
 

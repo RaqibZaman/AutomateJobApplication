@@ -231,8 +231,8 @@ class Window:
             self.update_tab_url()
 
             # Logic here needs to be fixed
-            # if self.automate.skip():
-            #     continue
+            if self.automate.skip():
+                continue
             
             self.main.wait_variable(self.go_signal)    # wait_variable checks variable modified not value
             if self.keep_alive == False:
