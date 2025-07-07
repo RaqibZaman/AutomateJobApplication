@@ -276,12 +276,14 @@ class Window:
                             for idx, c in enumerate(t.children):
                                 # I matched the label txt, now I am going to the next input element
                                 if self.e_match(c.e, type, value, a_match):
-                                    if any("select" in c.tag for c in t.children[idx:]):
-                                        print("Keep going through tree")
-                                        continue
-                                    else:
-                                        e_match_found = True
-                                        break
+                                    e_match_found = True
+                                    break
+                                    # if any("select" in c.tag for c in t.children[idx:]):
+                                    #     print("Keep going through tree")
+                                    #     continue
+                                    # else:
+                                    #     e_match_found = True
+                                    #     break
                             
                             # Nothing matched, add new excel entry
                             if not e_match_found:
