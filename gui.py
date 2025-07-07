@@ -65,7 +65,7 @@ class Window:
         self.r2 = tk.Frame(self.main)
         self.r2.pack(fill=tk.BOTH, expand=True)
 
-        update_excel_btn = tk.Button(self.r2, text="Update Excel", bg="orange", fg="white", command=self.update_excel)
+        update_excel_btn = tk.Button(self.r2, text="Update from Excel", bg="orange", fg="white", command=self.update_excel)
         update_excel_btn.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
 
         # row 3         -- Print Visible 

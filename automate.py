@@ -197,21 +197,23 @@ class Automate:
             print("too fast:", ex) 
 
     def input_handling(self, ee: WebElement, type, value):
-        y_n_map = {"yes": "1", "no": "0", "Doesn't apply":"DOESN_T_APPLY"}  # radio value can be 1, 0, or some other nonsense value
+        # Note that radio input values, a lot of the time, are not revelant
         ee_type = ee.get_attribute("type")
         if(ee_type == "radio" == type):
-            if (ee.get_attribute("value") == y_n_map.get(value.lower(), "") 
-                or ee.get_attribute("value").lower() == value.lower()
-            ):
+            value = value.lower()
+            parent_ee = ee.find_element(By.XPATH, "..") # .. means find the parent element in DOM, which should be label
+            parent_txt = parent_ee.text.strip().lower()
+            
+            if value in parent_ee.text.strip().lower():
                 ee.click()
                 return True
-            else:
-                # incase radio value is nonsense, look at its label
-                # check parent element, which should be label. Its text should indicate if input is valid
-                parent_ee = ee.find_element(By.XPATH, "..") # .. means go up one level
-                if value.lower() in parent_ee.text.strip().lower():
+            elif value[0] == "[" and value[-1] == "]":
+                value = value.strip("[]")
+                if value == parent_txt:
                     ee.click()
                     return True
+                else:
+                    return False
         # text input
         elif(ee_type == "text" == type):
             if value == "[current date]":
@@ -227,7 +229,7 @@ class Automate:
             if value.lower() in parent_ee.text.strip().lower():
                 if not ee.is_selected():
                     ee.click()
-                    return True
+                return True
         else:
             return False
 
@@ -251,6 +253,8 @@ class Automate:
         if type != "text" and type != "textarea":
             if type != "[cover letter]":      # you can also add the cover letter flag check if you need.
                 return False
+        if value == "[current date]":
+                value = datetime.today().strftime("%m/%d/%Y")
         ee.click()  # focus?
         ee.send_keys(Keys.CONTROL + "a")
         ee.send_keys(Keys.DELETE)   # clear content before adding value
