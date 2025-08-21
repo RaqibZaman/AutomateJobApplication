@@ -1,6 +1,7 @@
 # AutomateJobApplication
 Automate the online job application process because I am tired of being the robot...
-![FormFillDemo_Smaller](https://github.com/user-attachments/assets/6be99587-558d-4ac7-b332-939a74c9fea4)
+![FormFillDemo](https://github.com/user-attachments/assets/3b2d1ebd-0774-4064-a439-5ed2b7e66ad9)
+
 
 
 ...
