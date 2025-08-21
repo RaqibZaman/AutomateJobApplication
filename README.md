@@ -1,5 +1,9 @@
 # AutomateJobApplication
 Automate the online job application process because I am tired of being the robot...
+![FormFillDemo_Smaller](https://github.com/user-attachments/assets/6be99587-558d-4ac7-b332-939a74c9fea4)
+
+
+...
 # Dev Notes for V0.1
 Objective: Automate the online job application process
 Requirements:
